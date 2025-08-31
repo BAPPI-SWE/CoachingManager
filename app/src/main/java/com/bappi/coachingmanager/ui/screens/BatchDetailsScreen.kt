@@ -24,7 +24,7 @@ import com.bappi.coachingmanager.ui.viewmodels.BatchDetailsViewModel
 @Composable
 fun BatchDetailsScreen(
     navController: NavController,
-    batchId: String, // Kept for simplicity, though viewModel has it
+    batchId: String,
     viewModel: BatchDetailsViewModel
 ) {
 
@@ -49,14 +49,16 @@ fun BatchDetailsScreen(
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            // Placeholder for Search and Stats from your sketch
-            // We will implement these in the next part
             Text("Stats and Search will go here", style = MaterialTheme.typography.titleMedium)
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = { /* TODO: Implement Admit Student */ },
+                // UPDATE THIS ONCLICK ACTION
+                onClick = {
+                    // Navigate to the admit screen, passing the current batchId
+                    navController.navigate("admit_student/$batchId")
+                },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Admit New Student +")
@@ -64,7 +66,6 @@ fun BatchDetailsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Student List Header
             Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
                 Text("SL.", modifier = Modifier.width(40.dp), fontWeight = FontWeight.Bold)
                 Text("Name", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
@@ -96,11 +97,9 @@ fun StudentRow(serial: Int, student: Student) {
         Text(serial.toString(), modifier = Modifier.width(40.dp))
         Text(student.name, modifier = Modifier.weight(1f), fontSize = 18.sp)
 
-        // "Pay" button (using an Edit icon for now)
         IconButton(onClick = { /* TODO: Navigate to Payment Entry */ }) {
             Icon(Icons.Default.Edit, contentDescription = "Make Payment", tint = MaterialTheme.colorScheme.primary)
         }
-        // "Delete" button
         IconButton(onClick = { /* TODO: Implement Delete Student */ }) {
             Icon(Icons.Default.Delete, contentDescription = "Delete Student", tint = MaterialTheme.colorScheme.error)
         }

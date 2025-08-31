@@ -21,12 +21,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.bappi.coachingmanager.auth.GoogleAuthUiClient
+import com.bappi.coachingmanager.ui.screens.AdmitStudentScreen
 import com.bappi.coachingmanager.ui.screens.BatchDetailsScreen
-import com.bappi.coachingmanager.ui.screens.HomeScreen // Correct import
-import com.bappi.coachingmanager.ui.screens.LoginScreen // Correct import
+import com.bappi.coachingmanager.ui.screens.HomeScreen
+import com.bappi.coachingmanager.ui.screens.LoginScreen
 import com.bappi.coachingmanager.ui.theme.CoachingManagerTheme
 import com.bappi.coachingmanager.ui.viewmodels.LoginViewModel
-import com.google.android.gms.auth.api.identity.Identity // Correct import
+import com.google.android.gms.auth.api.identity.Identity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -112,12 +113,25 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(
                             route = Routes.BATCH_DETAILS_SCREEN,
-                            // This part defines the arguments we can pass
                             arguments = listOf(navArgument("batchId") { type = NavType.StringType })
                         ) { backStackEntry ->
-                            // This gets the batchId that was passed
                             val batchId = backStackEntry.arguments?.getString("batchId") ?: ""
-                            BatchDetailsScreen(navController = navController, batchId = batchId , viewModel = viewModel())
+                            BatchDetailsScreen(
+                                navController = navController,
+                                batchId = batchId,
+                                viewModel = viewModel()
+                            )
+                        }
+                        // ADD THIS NEW COMPOSABLE BLOCK FOR ADMIT STUDENT SCREEN
+                        composable(
+                            route = Routes.ADMIT_STUDENT_SCREEN,
+                            arguments = listOf(navArgument("batchId") { type = NavType.StringType })
+                        ) { backStackEntry ->
+                            val batchId = backStackEntry.arguments?.getString("batchId") ?: ""
+                            AdmitStudentScreen(
+                                navController = navController,
+                                batchId = batchId
+                            )
                         }
                     }
                 }
@@ -126,9 +140,10 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// Make sure this object is at the bottom of the file, AFTER the MainActivity class
 object Routes {
     const val LOGIN_SCREEN = "login"
     const val HOME_SCREEN = "home"
     const val BATCH_DETAILS_SCREEN = "batch_details/{batchId}"
+    // ADD THIS NEW ROUTE DEFINITION
+    const val ADMIT_STUDENT_SCREEN = "admit_student/{batchId}"
 }
