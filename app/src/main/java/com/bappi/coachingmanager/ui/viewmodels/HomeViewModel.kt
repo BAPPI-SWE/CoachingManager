@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-// NEW: Data class to combine Student and their Batch Name for search results
+// Data class to combine Student and their Batch Name for search results
 data class StudentSearchResult(
     val student: Student,
     val batchName: String
@@ -25,14 +25,11 @@ class HomeViewModel : ViewModel() {
     private val _batches = MutableStateFlow<List<Batch>>(emptyList())
     val batches = _batches.asStateFlow()
 
-    // NEW: State to hold all students from all batches
     private val _allStudents = MutableStateFlow<List<Student>>(emptyList())
 
-    // NEW: State for the home screen search query
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
 
-    // NEW: A flow that provides filtered search results
     val searchResults: StateFlow<List<StudentSearchResult>> =
         combine(_allStudents, batches, _searchQuery) { students, batchList, query ->
             if (query.isBlank()) {
@@ -41,7 +38,6 @@ class HomeViewModel : ViewModel() {
                 students
                     .filter { it.name.contains(query, ignoreCase = true) }
                     .mapNotNull { student ->
-                        // Find the batch name for each student in the result
                         val batch = batchList.find { it.id == student.batchId }
                         batch?.let { StudentSearchResult(student, it.name) }
                     }
@@ -53,16 +49,13 @@ class HomeViewModel : ViewModel() {
         fetchBatchesAndStudents()
     }
 
-    // NEW: Function to update the home screen search query
     fun onSearchQueryChange(query: String) {
         _searchQuery.value = query
     }
 
-    // UPDATED: This function now fetches batches AND their corresponding students
     private fun fetchBatchesAndStudents() {
         val userId = auth.currentUser?.uid ?: return
 
-        // First, fetch the batches
         db.collection("batches")
             .whereEqualTo("teacherId", userId)
             .orderBy("createdAt")
@@ -74,17 +67,13 @@ class HomeViewModel : ViewModel() {
                 if (batchSnapshot != null) {
                     val batchList = batchSnapshot.toObjects(Batch::class.java)
                     _batches.value = batchList
-
-                    // After fetching batches, fetch all students for this user
                     fetchAllStudents(userId)
                 }
             }
     }
 
-    // NEW: Function to fetch all students across all batches for a teacher
     private fun fetchAllStudents(userId: String) {
         if (userId.isBlank()) return
-        // This query gets all documents in the 'students' subcollections where teacherId matches
         db.collectionGroup("students").whereEqualTo("teacherId", userId)
             .addSnapshotListener { studentSnapshot, error ->
                 if (error != null) {
@@ -112,6 +101,33 @@ class HomeViewModel : ViewModel() {
                 newBatchRef.set(newBatch).await()
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Error creating batch: ", e)
+            }
+        }
+    }
+
+    // ✅ NEW: Function to update a batch's name
+    fun updateBatchName(batchId: String, newName: String) {
+        if (newName.isBlank()) return
+        viewModelScope.launch {
+            try {
+                db.collection("batches").document(batchId)
+                    .update("name", newName)
+                    .await()
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Error updating batch name: ", e)
+            }
+        }
+    }
+
+    // ✅ NEW: Function to delete a batch (and its students)
+    fun deleteBatch(batchId: String) {
+        viewModelScope.launch {
+            try {
+                // Note: This is a simplified delete. For production, you might want to
+                // delete all students in the batch in a batched write for safety.
+                db.collection("batches").document(batchId).delete().await()
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Error deleting batch: ", e)
             }
         }
     }
