@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -44,6 +45,21 @@ fun BatchDetailsScreen(
 
     var studentToDelete by remember { mutableStateOf<Student?>(null) }
     var listToShow by remember { mutableStateOf<StudentListType?>(null) }
+
+    // ✅ LISTEN for the result from the PaymentEntryScreen.
+    val navBackStackEntry = navController.currentBackStackEntry
+    val paymentMade = navBackStackEntry
+        ?.savedStateHandle
+        ?.getLiveData<Boolean>("payment_successful")
+        ?.observeAsState()
+
+    LaunchedEffect(paymentMade) {
+        if (paymentMade?.value == true) {
+            viewModel.refresh()
+            // Reset the value to prevent multiple refreshes
+            navBackStackEntry?.savedStateHandle?.remove<Boolean>("payment_successful")
+        }
+    }
 
     // This logic creates the detailed lists for the dialogs.
     val (paidStudentsInfo, unpaidStudents) = remember(students, selectedDate) {
@@ -327,7 +343,6 @@ fun StatsSection(
     }
 }
 
-// ✅ MODIFIED: The payment icon is now a "Pay" button.
 @Composable
 fun StudentRow(
     serial: Int,
@@ -343,13 +358,12 @@ fun StudentRow(
             .fillMaxWidth()
             .background(color = rowColor)
             .clickable { navController.navigate("student_details/${student.batchId}/${student.id}") }
-            .padding(vertical = 4.dp, horizontal = 4.dp), // Adjusted vertical padding
+            .padding(vertical = 4.dp, horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(serial.toString(), modifier = Modifier.width(40.dp))
         Text(student.name, modifier = Modifier.weight(1f), fontSize = 18.sp)
 
-        // The IconButton has been replaced with this Button
         Button(
             onClick = { navController.navigate("payment_entry/${student.batchId}/${student.id}") },
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
@@ -357,7 +371,7 @@ fun StudentRow(
             Text("Pay", fontSize = 12.sp)
         }
 
-        Spacer(modifier = Modifier.width(4.dp)) // Add a little space between buttons
+        Spacer(modifier = Modifier.width(4.dp))
 
         IconButton(onClick = onDeleteClick) {
             Icon(Icons.Default.Delete, contentDescription = "Delete Student", tint = MaterialTheme.colorScheme.error)

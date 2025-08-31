@@ -33,6 +33,12 @@ fun PaymentEntryScreen(
     LaunchedEffect(saveUiState) {
         if (saveUiState.isSuccess) {
             Toast.makeText(context, "Payment Saved!", Toast.LENGTH_SHORT).show()
+
+            // ✅ SET A RESULT for the previous screen to observe.
+            navController.previousBackStackEntry
+                ?.savedStateHandle
+                ?.set("payment_successful", true)
+
             navController.popBackStack()
             viewModel.resetSaveState()
         }

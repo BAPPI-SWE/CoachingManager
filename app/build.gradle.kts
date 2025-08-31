@@ -74,4 +74,6 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.7.7")
     // ADD THIS LINE FOR GOOGLE SIGN-IN
     implementation("com.google.android.gms:play-services-auth:21.2.0")
+
+    implementation("androidx.compose.runtime:runtime-livedata:1.6.8")
 }
