@@ -46,18 +46,18 @@ fun BatchDetailsScreen(
     var studentToDelete by remember { mutableStateOf<Student?>(null) }
     var listToShow by remember { mutableStateOf<StudentListType?>(null) }
 
-    // ✅ LISTEN for the result from the PaymentEntryScreen.
+    // ✅ LISTEN for the generic refresh result from other screens.
     val navBackStackEntry = navController.currentBackStackEntry
-    val paymentMade = navBackStackEntry
+    val shouldRefresh = navBackStackEntry
         ?.savedStateHandle
-        ?.getLiveData<Boolean>("payment_successful")
+        ?.getLiveData<Boolean>("refresh_student_list")
         ?.observeAsState()
 
-    LaunchedEffect(paymentMade) {
-        if (paymentMade?.value == true) {
+    LaunchedEffect(shouldRefresh) {
+        if (shouldRefresh?.value == true) {
             viewModel.refresh()
             // Reset the value to prevent multiple refreshes
-            navBackStackEntry?.savedStateHandle?.remove<Boolean>("payment_successful")
+            navBackStackEntry?.savedStateHandle?.remove<Boolean>("refresh_student_list")
         }
     }
 

@@ -30,6 +30,12 @@ fun AdmitStudentScreen(
     LaunchedEffect(saveUiState) {
         if (saveUiState.isSuccess) {
             Toast.makeText(context, "Student Saved!", Toast.LENGTH_SHORT).show()
+
+            // ✅ SET A RESULT for the previous screen to observe.
+            navController.previousBackStackEntry
+                ?.savedStateHandle
+                ?.set("refresh_student_list", true)
+
             navController.popBackStack()
             viewModel.resetSaveState()
         }
