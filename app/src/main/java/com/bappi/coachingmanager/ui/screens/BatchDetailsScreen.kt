@@ -184,7 +184,7 @@ fun BatchDetailsScreen(
     }
 }
 
-// NEW: A dialog to display a list of student names
+// ✅ FIXED: A dialog to display a scrollable list of student names
 @Composable
 fun StudentListDialog(
     title: String,
@@ -198,9 +198,19 @@ fun StudentListDialog(
             if (students.isEmpty()) {
                 Text("No students in this category.")
             } else {
-                LazyColumn {
+                // The LazyColumn needs a constrained height to become scrollable
+                // inside a dialog. heightIn provides a max height.
+                LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
                     items(students) { student ->
-                        Text(student.name, modifier = Modifier.padding(vertical = 4.dp))
+                        Column {
+                            Text(
+                                text = student.name,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp)
+                            )
+                            Divider()
+                        }
                     }
                 }
             }
