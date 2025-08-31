@@ -7,20 +7,23 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bappi.coachingmanager.data.Student
 import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-// This class holds the state for our form fields
+// UPDATE THE FORM STATE WITH NEW FIELDS
 class AdmitStudentFormState {
     var name by mutableStateOf("")
     var roll by mutableStateOf("")
     var phone by mutableStateOf("")
     var address by mutableStateOf("")
+    var studentClass by mutableStateOf("")
+    var section by mutableStateOf("")
+    var school by mutableStateOf("")
 }
 
-// A new data class to represent the different UI states of the save operation
 data class SaveUiState(
     val isSaving: Boolean = false,
     val isSuccess: Boolean = false,
@@ -41,35 +44,40 @@ class AdmitStudentViewModel : ViewModel() {
             return
         }
 
-        // Set state to saving
         _saveUiState.value = SaveUiState(isSaving = true)
         viewModelScope.launch {
             try {
-                val newStudentDoc = Firebase.firestore
-                    .collection("batches").document(batchId)
-                    .collection("students").document()
-
                 val student = Student(
-                    id = newStudentDoc.id,
                     name = formState.name,
                     roll = formState.roll,
                     phone = formState.phone,
                     address = formState.address,
+                    // ADD THE NEW FIELDS HERE
+                    studentClass = formState.studentClass,
+                    section = formState.section,
+                    school = formState.school,
+                    // END OF NEW FIELDS
                     teacherId = userId,
                     batchId = batchId
                 )
-                newStudentDoc.set(student).await()
 
-                // Set state to success
+                Firebase.firestore.runBatch { batch ->
+                    val newStudentDoc = Firebase.firestore
+                        .collection("batches").document(batchId)
+                        .collection("students").document()
+                    batch.set(newStudentDoc, student.copy(id = newStudentDoc.id))
+
+                    val batchRef = Firebase.firestore.collection("batches").document(batchId)
+                    batch.update(batchRef, "studentCount", FieldValue.increment(1))
+                }.await()
+
                 _saveUiState.value = SaveUiState(isSuccess = true)
             } catch (e: Exception) {
-                // Set state to error
                 _saveUiState.value = SaveUiState(error = e.message)
             }
         }
     }
 
-    // Function to reset the state after the event has been handled
     fun resetSaveState() {
         _saveUiState.value = SaveUiState()
     }

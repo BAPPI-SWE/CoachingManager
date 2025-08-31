@@ -27,16 +27,15 @@ fun AdmitStudentScreen(
     val saveUiState = viewModel.saveUiState
     val context = LocalContext.current
 
-    // This effect will now handle both success and error states
     LaunchedEffect(saveUiState) {
         if (saveUiState.isSuccess) {
             Toast.makeText(context, "Student Saved!", Toast.LENGTH_SHORT).show()
             navController.popBackStack()
-            viewModel.resetSaveState() // Reset state after handling
+            viewModel.resetSaveState()
         }
         if (saveUiState.error != null) {
             Toast.makeText(context, "Error: ${saveUiState.error}", Toast.LENGTH_LONG).show()
-            viewModel.resetSaveState() // Reset state after handling
+            viewModel.resetSaveState()
         }
     }
 
@@ -63,10 +62,30 @@ fun AdmitStudentScreen(
             OutlinedTextField(
                 value = formState.name,
                 onValueChange = { formState.name = it },
-                label = { Text("Name*") }, // Mark as required
+                label = { Text("Name*") },
                 modifier = Modifier.fillMaxWidth(),
                 isError = formState.name.isBlank()
             )
+            // ADD THE NEW TEXT FIELDS
+            OutlinedTextField(
+                value = formState.studentClass,
+                onValueChange = { formState.studentClass = it },
+                label = { Text("Class") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = formState.section,
+                onValueChange = { formState.section = it },
+                label = { Text("Section") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = formState.school,
+                onValueChange = { formState.school = it },
+                label = { Text("School") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            // END OF NEW TEXT FIELDS
             OutlinedTextField(
                 value = formState.roll,
                 onValueChange = { formState.roll = it },
@@ -91,11 +110,9 @@ fun AdmitStudentScreen(
             Button(
                 onClick = { viewModel.saveStudent(batchId) },
                 modifier = Modifier.fillMaxWidth(),
-                // Disable the button while saving to prevent multiple clicks
                 enabled = !saveUiState.isSaving
             ) {
                 if (saveUiState.isSaving) {
-                    // Show a loading indicator
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
                         color = MaterialTheme.colorScheme.onPrimary

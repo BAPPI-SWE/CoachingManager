@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.bappi.coachingmanager.data.Batch
 import com.bappi.coachingmanager.data.Student
 import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.*
@@ -27,14 +28,11 @@ class BatchDetailsViewModel(
     private val _batch = MutableStateFlow<Batch?>(null)
     val batch = _batch.asStateFlow()
 
-    // This will hold the full, unfiltered list of students
     private val _students = MutableStateFlow<List<Student>>(emptyList())
 
-    // NEW: State for the search query
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
 
-    // NEW: A publicly exposed, filtered list of students
     val filteredStudents: StateFlow<List<Student>> = combine(_students, _searchQuery) { students, query ->
         if (query.isBlank()) {
             students
@@ -43,7 +41,6 @@ class BatchDetailsViewModel(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-
     private val _selectedDate = MutableStateFlow(Calendar.getInstance().time)
     val selectedDate = _selectedDate.asStateFlow()
 
@@ -51,12 +48,15 @@ class BatchDetailsViewModel(
         calculateStats(studentList, date)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PaymentStats())
 
+    // --- NEW: Refresh state for pull-to-refresh ---
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing = _isRefreshing.asStateFlow()
+
     init {
         fetchBatchDetails()
         fetchStudents()
     }
 
-    // NEW: Function to update the search query
     fun onSearchQueryChange(query: String) {
         _searchQuery.value = query
     }
@@ -101,7 +101,7 @@ class BatchDetailsViewModel(
                     batch.update(batchRef, "studentCount", FieldValue.increment(-1))
                 }
             } catch (e: Exception) {
-                // Handle error
+                // Handle error if needed
             }
         }
     }
@@ -115,11 +115,24 @@ class BatchDetailsViewModel(
 
     private fun fetchStudents() {
         db.collection("batches").document(batchId).collection("students")
-            .orderBy("name")
+            .orderBy("admissionDate", Query.Direction.ASCENDING)
             .addSnapshotListener { snapshot, _ ->
                 if (snapshot != null) {
                     _students.value = snapshot.toObjects(Student::class.java)
                 }
             }
+    }
+
+    // --- NEW: Refresh function for pull-to-refresh ---
+    fun refresh() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            try {
+                fetchBatchDetails()
+                fetchStudents()
+            } finally {
+                _isRefreshing.value = false
+            }
+        }
     }
 }

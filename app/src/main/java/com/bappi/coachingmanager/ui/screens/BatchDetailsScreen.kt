@@ -19,6 +19,8 @@ import com.bappi.coachingmanager.ui.viewmodels.BatchDetailsViewModel
 import com.bappi.coachingmanager.ui.viewmodels.PaymentStats
 import java.text.SimpleDateFormat
 import java.util.*
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,11 +30,11 @@ fun BatchDetailsScreen(
     viewModel: BatchDetailsViewModel
 ) {
     val batch by viewModel.batch.collectAsState()
-    // UPDATE: Use the new filteredStudents list for the UI
     val students by viewModel.filteredStudents.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedDate by viewModel.selectedDate.collectAsState()
     val stats by viewModel.paymentStats.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
 
     var studentToDelete by remember { mutableStateOf<Student?>(null) }
 
@@ -54,7 +56,6 @@ fun BatchDetailsScreen(
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            // NEW: Add the search field
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { viewModel.onSearchQueryChange(it) },
@@ -82,26 +83,41 @@ fun BatchDetailsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
+            ) {
                 Text("SL.", modifier = Modifier.width(40.dp), fontWeight = FontWeight.Bold)
                 Text("Name", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
                 Text("Actions", modifier = Modifier.wrapContentWidth(), fontWeight = FontWeight.Bold)
             }
             Divider()
 
-            if (students.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No students found.") // Updated message
-                }
-            } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(students.withIndex().toList()) { (index, student) ->
-                        StudentRow(
-                            serial = index + 1,
-                            student = student,
-                            navController = navController,
-                            onDeleteClick = { studentToDelete = student }
-                        )
+            val swipeRefreshState = rememberSwipeRefreshState(isRefreshing)
+
+            SwipeRefresh(
+                state = swipeRefreshState,
+                onRefresh = { viewModel.refresh() },
+                modifier = Modifier.fillMaxSize()
+            ) {
+                if (students.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("No students found.")
+                    }
+                } else {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(students.withIndex().toList()) { (index, student) ->
+                            StudentRow(
+                                serial = index + 1,
+                                student = student,
+                                navController = navController,
+                                onDeleteClick = { studentToDelete = student }
+                            )
+                        }
                     }
                 }
             }
@@ -131,8 +147,6 @@ fun BatchDetailsScreen(
     }
 }
 
-// StatsSection and StudentRow composables remain the same...
-// ... (You can keep your existing code for these)
 @Composable
 fun StatsSection(
     stats: PaymentStats,

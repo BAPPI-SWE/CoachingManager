@@ -48,6 +48,14 @@ fun StudentDetailsScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                // ADD THE NEW FIELDS TO THE DISPLAY
+                DetailItem(label = "Class:", value = it.studentClass)
+                DetailItem(label = "Section:", value = it.section)
+                DetailItem(label = "School:", value = it.school)
+                Divider() // Add a separator
+                Spacer(modifier = Modifier.height(8.dp))
+                // END OF NEW FIELDS
+
                 DetailItem(label = "Roll:", value = it.roll)
                 DetailItem(label = "Phone:", value = it.phone)
                 DetailItem(label = "Address:", value = it.address)
@@ -65,7 +73,6 @@ fun StudentDetailsScreen(
                     Text("No transactions found.")
                 } else {
                     LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                        // Display latest payments first
                         items(it.payments.sortedByDescending { p -> p.paymentDate }) { payment ->
                             TransactionRow(payment = payment)
                         }
@@ -73,7 +80,6 @@ fun StudentDetailsScreen(
                 }
             }
         } ?: run {
-            // Show a loading indicator while the student data is being fetched
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
                 CircularProgressIndicator()
             }
@@ -81,6 +87,7 @@ fun StudentDetailsScreen(
     }
 }
 
+// DetailItem and TransactionRow composables remain the same
 @Composable
 fun DetailItem(label: String, value: String) {
     Row {

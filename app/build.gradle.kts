@@ -60,10 +60,15 @@ dependencies {
     // Firebase BoM (Bill of Materials)
     implementation(platform("com.google.firebase:firebase-bom:33.1.0"))
 
+    // THIS IS THE IMPORTANT LINE. UPDATE THE VERSION TO 1.2.1
+    implementation("androidx.compose.material3:material3:1.2.1")
     // Add the dependencies for the products you want to use
     // For now, we need Authentication and Firestore Database
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
+
+    implementation("com.google.accompanist:accompanist-swiperefresh:0.31.5-beta")
+
 
     // Add this line for Jetpack Compose Navigation
     implementation("androidx.navigation:navigation-compose:2.7.7")
