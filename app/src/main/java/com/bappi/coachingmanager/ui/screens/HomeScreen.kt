@@ -15,19 +15,21 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.bappi.coachingmanager.data.Batch
 import com.bappi.coachingmanager.ui.viewmodels.HomeViewModel
+import com.bappi.coachingmanager.ui.viewmodels.StudentSearchResult
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController, homeViewModel: HomeViewModel = viewModel()) {
 
     val batches by homeViewModel.batches.collectAsState()
+    val searchQuery by homeViewModel.searchQuery.collectAsState()
+    val searchResults by homeViewModel.searchResults.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Home") },
-                // We will add a logout button later
             )
         }
     ) { paddingValues ->
@@ -37,38 +39,48 @@ fun HomeScreen(navController: NavController, homeViewModel: HomeViewModel = view
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            // Search Bar (we will make this functional later)
+            // Search Bar is now connected to the ViewModel
             OutlinedTextField(
-                value = "",
-                onValueChange = {},
+                value = searchQuery,
+                onValueChange = { homeViewModel.onSearchQueryChange(it) },
                 label = { Text("Search Student") },
                 modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Create New Batch Button
-            Button(
-                onClick = { showDialog = true },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(text = "Create New Batch +")
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // List of Batches
-            if (batches.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No batches found. Create one!")
+            // CONDITIONAL UI: Show search results or the batch list
+            if (searchQuery.isNotBlank()) {
+                // Show Search Results
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(searchResults) { result ->
+                        SearchResultCard(result = result) {
+                            // Navigate directly to student details on click
+                            navController.navigate("student_details/${result.student.batchId}/${result.student.id}")
+                        }
+                    }
                 }
             } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(batches) { batch ->
-                        BatchCard(batch = batch) {
-                            // Handle click on a batch card
-                            // We will navigate to the next screen here later
-                            navController.navigate("batch_details/${batch.id}")
+                // Show Batch List (the original UI)
+                Button(
+                    onClick = { showDialog = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(text = "Create New Batch +")
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                if (batches.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("No batches found. Create one!")
+                    }
+                } else {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(batches) { batch ->
+                            BatchCard(batch = batch) {
+                                navController.navigate("batch_details/${batch.id}")
+                            }
                         }
                     }
                 }
@@ -87,6 +99,25 @@ fun HomeScreen(navController: NavController, homeViewModel: HomeViewModel = view
     }
 }
 
+// NEW: A composable for displaying a single search result item
+@Composable
+fun SearchResultCard(result: StudentSearchResult, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+    ) {
+        Row(modifier = Modifier.padding(16.dp)) {
+            Column {
+                Text(result.student.name, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text("Batch: ${result.batchName}", style = MaterialTheme.typography.bodySmall)
+            }
+        }
+    }
+}
+
+
+// BatchCard and CreateBatchDialog composables remain the same...
 @Composable
 fun BatchCard(batch: Batch, onClick: () -> Unit) {
     Card(
