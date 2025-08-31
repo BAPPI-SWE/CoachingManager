@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1012832568995",
+    "project_id": "coachingmanagement-b7aae",
+    "storage_bucket": "coachingmanagement-b7aae.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1012832568995:android:fbe2d12868bebb5abbe116",
+        "android_client_info": {
+          "package_name": "com.bappi.coachingmanager"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1012832568995-lqh7hcrb0qbfjpcr5vsa6a0ocfrtl04d.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bappi.coachingmanager",
+            "certificate_hash": "7a2aa757606b1fa1d109eb5823d103168ab7192e"
+          }
+        },
+        {
+          "client_id": "1012832568995-rurudvc76166hs7sf7mvadbthmsier4n.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBNoHLCnp4w_ThnCXsWOE8YRpJOCsXo6VM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1012832568995-rurudvc76166hs7sf7mvadbthmsier4n.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
