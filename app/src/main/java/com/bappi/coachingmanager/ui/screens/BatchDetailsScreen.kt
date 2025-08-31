@@ -17,10 +17,13 @@ import androidx.navigation.NavController
 import com.bappi.coachingmanager.data.Student
 import com.bappi.coachingmanager.ui.viewmodels.BatchDetailsViewModel
 import com.bappi.coachingmanager.ui.viewmodels.PaymentStats
-import java.text.SimpleDateFormat
-import java.util.*
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
+import java.text.SimpleDateFormat
+import java.util.*
+
+// NEW: An enum to determine which list to show in the dialog
+private enum class StudentListType { PAID, UNPAID }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,6 +40,28 @@ fun BatchDetailsScreen(
     val isRefreshing by viewModel.isRefreshing.collectAsState()
 
     var studentToDelete by remember { mutableStateOf<Student?>(null) }
+
+    // NEW: State to control which student list dialog to show (Paid or Unpaid)
+    var listToShow by remember { mutableStateOf<StudentListType?>(null) }
+
+    // NEW: Calculate the lists of paid and unpaid students.
+    // This will only recalculate when the main student list or the selected date changes.
+    val (paidStudents, unpaidStudents) = remember(students, selectedDate) {
+        val calendar = Calendar.getInstance()
+        calendar.time = selectedDate
+        val targetMonth = calendar.get(Calendar.MONTH)
+        val targetYear = calendar.get(Calendar.YEAR)
+
+        students.partition { student ->
+            student.payments.any { payment ->
+                val paymentCalendar = Calendar.getInstance()
+                paymentCalendar.time = payment.paymentDate
+                paymentCalendar.get(Calendar.MONTH) == targetMonth &&
+                        paymentCalendar.get(Calendar.YEAR) == targetYear
+            }
+        }
+    }
+
 
     Scaffold(
         topBar = {
@@ -69,7 +94,10 @@ fun BatchDetailsScreen(
                 stats = stats,
                 selectedDate = selectedDate,
                 onPreviousMonth = { viewModel.changeMonth(-1) },
-                onNextMonth = { viewModel.changeMonth(1) }
+                onNextMonth = { viewModel.changeMonth(1) },
+                // NEW: Handle clicks on the stats text
+                onPaidClick = { listToShow = StudentListType.PAID },
+                onUnpaidClick = { listToShow = StudentListType.UNPAID }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -83,11 +111,7 @@ fun BatchDetailsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp)
-            ) {
+            Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
                 Text("SL.", modifier = Modifier.width(40.dp), fontWeight = FontWeight.Bold)
                 Text("Name", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
                 Text("Actions", modifier = Modifier.wrapContentWidth(), fontWeight = FontWeight.Bold)
@@ -124,6 +148,19 @@ fun BatchDetailsScreen(
         }
     }
 
+    // NEW: Show the dialog when listToShow state is not null
+    listToShow?.let { type ->
+        val title = if (type == StudentListType.PAID) "Paid Students" else "Unpaid Students"
+        val studentsForDialog = if (type == StudentListType.PAID) paidStudents else unpaidStudents
+
+        StudentListDialog(
+            title = title,
+            students = studentsForDialog,
+            onDismiss = { listToShow = null }
+        )
+    }
+
+
     studentToDelete?.let { student ->
         AlertDialog(
             onDismissRequest = { studentToDelete = null },
@@ -147,12 +184,45 @@ fun BatchDetailsScreen(
     }
 }
 
+// NEW: A dialog to display a list of student names
+@Composable
+fun StudentListDialog(
+    title: String,
+    students: List<Student>,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            if (students.isEmpty()) {
+                Text("No students in this category.")
+            } else {
+                LazyColumn {
+                    items(students) { student ->
+                        Text(student.name, modifier = Modifier.padding(vertical = 4.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = onDismiss) {
+                Text("Close")
+            }
+        }
+    )
+}
+
+
 @Composable
 fun StatsSection(
     stats: PaymentStats,
     selectedDate: Date,
     onPreviousMonth: () -> Unit,
-    onNextMonth: () -> Unit
+    onNextMonth: () -> Unit,
+    // NEW: Click handlers for the text
+    onPaidClick: () -> Unit,
+    onUnpaidClick: () -> Unit
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -178,8 +248,17 @@ fun StatsSection(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                Text("✅ Paid: ${stats.paidCount}", color = MaterialTheme.colorScheme.primary)
-                Text("❌ Unpaid: ${stats.unpaidCount}", color = MaterialTheme.colorScheme.error)
+                // NEW: Added clickable modifiers
+                Text(
+                    text = "✅ Paid: ${stats.paidCount}",
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable(onClick = onPaidClick)
+                )
+                Text(
+                    text = "❌ Unpaid: ${stats.unpaidCount}",
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.clickable(onClick = onUnpaidClick)
+                )
             }
         }
     }
