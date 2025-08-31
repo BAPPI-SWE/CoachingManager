@@ -220,7 +220,6 @@ fun BatchDetailsScreen(
     }
 }
 
-// ✅ MODIFIED: The dialog now shows the student's roll number along with their name.
 @Composable
 fun StudentListDialog(
     title: String,
@@ -328,6 +327,7 @@ fun StatsSection(
     }
 }
 
+// ✅ MODIFIED: The payment icon is now a "Pay" button.
 @Composable
 fun StudentRow(
     serial: Int,
@@ -343,15 +343,22 @@ fun StudentRow(
             .fillMaxWidth()
             .background(color = rowColor)
             .clickable { navController.navigate("student_details/${student.batchId}/${student.id}") }
-            .padding(vertical = 8.dp, horizontal = 4.dp),
+            .padding(vertical = 4.dp, horizontal = 4.dp), // Adjusted vertical padding
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(serial.toString(), modifier = Modifier.width(40.dp))
         Text(student.name, modifier = Modifier.weight(1f), fontSize = 18.sp)
 
-        IconButton(onClick = { navController.navigate("payment_entry/${student.batchId}/${student.id}") }) {
-            Icon(Icons.Default.AddCircle, contentDescription = "Make Payment", tint = MaterialTheme.colorScheme.primary)
+        // The IconButton has been replaced with this Button
+        Button(
+            onClick = { navController.navigate("payment_entry/${student.batchId}/${student.id}") },
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
+        ) {
+            Text("Pay", fontSize = 12.sp)
         }
+
+        Spacer(modifier = Modifier.width(4.dp)) // Add a little space between buttons
+
         IconButton(onClick = onDeleteClick) {
             Icon(Icons.Default.Delete, contentDescription = "Delete Student", tint = MaterialTheme.colorScheme.error)
         }
