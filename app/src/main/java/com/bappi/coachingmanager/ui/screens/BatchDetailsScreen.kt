@@ -46,7 +46,6 @@ fun BatchDetailsScreen(
     var studentToDelete by remember { mutableStateOf<Student?>(null) }
     var listToShow by remember { mutableStateOf<StudentListType?>(null) }
 
-    // ✅ LISTEN for the generic refresh result from other screens.
     val navBackStackEntry = navController.currentBackStackEntry
     val shouldRefresh = navBackStackEntry
         ?.savedStateHandle
@@ -56,12 +55,10 @@ fun BatchDetailsScreen(
     LaunchedEffect(shouldRefresh) {
         if (shouldRefresh?.value == true) {
             viewModel.refresh()
-            // Reset the value to prevent multiple refreshes
             navBackStackEntry?.savedStateHandle?.remove<Boolean>("refresh_student_list")
         }
     }
 
-    // This logic creates the detailed lists for the dialogs.
     val (paidStudentsInfo, unpaidStudents) = remember(students, selectedDate) {
         val calendar = Calendar.getInstance()
         calendar.time = selectedDate
@@ -89,7 +86,6 @@ fun BatchDetailsScreen(
         paid to unpaid
     }
 
-    // Create a set of paid student IDs for efficient lookup to highlight rows.
     val paidStudentIds = remember(students, selectedDate) {
         val calendar = Calendar.getInstance()
         calendar.time = selectedDate
@@ -343,6 +339,7 @@ fun StatsSection(
     }
 }
 
+// ✅ MODIFIED: Added an Edit button to the student row.
 @Composable
 fun StudentRow(
     serial: Int,
@@ -371,7 +368,12 @@ fun StudentRow(
             Text("Pay", fontSize = 12.sp)
         }
 
-        Spacer(modifier = Modifier.width(4.dp))
+        Spacer(modifier = Modifier.width(2.dp))
+
+        // New Edit Button
+        IconButton(onClick = { navController.navigate("edit_student/${student.batchId}/${student.id}") }) {
+            Icon(Icons.Default.Edit, contentDescription = "Edit Student", tint = Color(0xFF607D8B)) // Blue Grey color
+        }
 
         IconButton(onClick = onDeleteClick) {
             Icon(Icons.Default.Delete, contentDescription = "Delete Student", tint = MaterialTheme.colorScheme.error)

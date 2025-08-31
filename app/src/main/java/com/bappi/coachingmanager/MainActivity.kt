@@ -141,7 +141,6 @@ class MainActivity : ComponentActivity() {
                         ) {
                             PaymentEntryScreen(navController = navController, viewModel = viewModel())
                         }
-                        // ADD THIS NEW COMPOSABLE BLOCK FOR STUDENT DETAILS SCREEN
                         composable(
                             route = Routes.STUDENT_DETAILS_SCREEN,
                             arguments = listOf(
@@ -150,6 +149,16 @@ class MainActivity : ComponentActivity() {
                             )
                         ) {
                             StudentDetailsScreen(navController = navController, viewModel = viewModel())
+                        }
+                        // ✅ ADD THIS NEW COMPOSABLE BLOCK FOR THE EDIT SCREEN
+                        composable(
+                            route = Routes.EDIT_STUDENT_SCREEN,
+                            arguments = listOf(
+                                navArgument("batchId") { type = NavType.StringType },
+                                navArgument("studentId") { type = NavType.StringType }
+                            )
+                        ) {
+                            EditStudentScreen(navController = navController, viewModel = viewModel())
                         }
                     }
                 }
@@ -166,6 +175,7 @@ object Routes {
     const val BATCH_DETAILS_SCREEN = "batch_details/{batchId}"
     const val ADMIT_STUDENT_SCREEN = "admit_student/{batchId}"
     const val PAYMENT_ENTRY_SCREEN = "payment_entry/{batchId}/{studentId}"
-    // ADD THIS NEW ROUTE DEFINITION
     const val STUDENT_DETAILS_SCREEN = "student_details/{batchId}/{studentId}"
+    // ✅ ADD THIS NEW ROUTE DEFINITION
+    const val EDIT_STUDENT_SCREEN = "edit_student/{batchId}/{studentId}"
 }
