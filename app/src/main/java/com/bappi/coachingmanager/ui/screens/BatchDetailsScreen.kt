@@ -73,7 +73,7 @@ fun BatchDetailsScreen(
         paid to unpaid
     }
 
-    // ✅ NEW: Create a set of paid student IDs for efficient lookup to highlight rows.
+    // Create a set of paid student IDs for efficient lookup to highlight rows.
     val paidStudentIds = remember(students, selectedDate) {
         val calendar = Calendar.getInstance()
         calendar.time = selectedDate
@@ -107,7 +107,7 @@ fun BatchDetailsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp) // Adjusted padding
+                .padding(horizontal = 16.dp)
         ) {
             Spacer(modifier = Modifier.height(16.dp))
             OutlinedTextField(
@@ -162,7 +162,6 @@ fun BatchDetailsScreen(
                         modifier = Modifier.fillMaxSize()
                     ) {
                         items(students.withIndex().toList()) { (index, student) ->
-                            // ✅ MODIFIED: Check if the student has paid and pass the result to StudentRow.
                             val isPaid = student.id in paidStudentIds
                             StudentRow(
                                 serial = index + 1,
@@ -221,6 +220,7 @@ fun BatchDetailsScreen(
     }
 }
 
+// ✅ MODIFIED: The dialog now shows the student's roll number along with their name.
 @Composable
 fun StudentListDialog(
     title: String,
@@ -239,6 +239,8 @@ fun StudentListDialog(
                         Column {
                             when (item) {
                                 is StudentPaymentInfo -> {
+                                    val student = item.student
+                                    val displayText = if (student.roll.isNotBlank()) "${student.roll}. ${student.name}" else student.name
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -246,7 +248,7 @@ fun StudentListDialog(
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(text = item.student.name)
+                                        Text(text = displayText)
                                         Text(
                                             text = "৳${item.amountPaid}",
                                             fontWeight = FontWeight.Bold
@@ -254,8 +256,9 @@ fun StudentListDialog(
                                     }
                                 }
                                 is Student -> {
+                                    val displayText = if (item.roll.isNotBlank()) "${item.roll}. ${item.name}" else item.name
                                     Text(
-                                        text = item.name,
+                                        text = displayText,
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(vertical = 8.dp)
@@ -325,7 +328,6 @@ fun StatsSection(
     }
 }
 
-// ✅ MODIFIED: StudentRow now accepts an `isPaid` flag and changes its background color.
 @Composable
 fun StudentRow(
     serial: Int,
