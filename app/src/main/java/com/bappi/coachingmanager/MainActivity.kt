@@ -48,7 +48,14 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val navController = rememberNavController()
 
-                    NavHost(navController = navController, startDestination = Routes.LOGIN_SCREEN) {
+                    NavHost(navController = navController, startDestination = Routes.SPLASH_SCREEN) {
+                        composable(Routes.SPLASH_SCREEN) {
+                            SplashScreen(
+                                navController = navController,
+                                googleAuthUiClient = googleAuthUiClient
+                            )
+                        }
+
                         composable(Routes.LOGIN_SCREEN) {
                             // ... Login Screen Logic
                             val viewModel = viewModel<LoginViewModel>()
@@ -152,6 +159,8 @@ class MainActivity : ComponentActivity() {
 }
 
 object Routes {
+    const val SPLASH_SCREEN = "splash"
+
     const val LOGIN_SCREEN = "login"
     const val HOME_SCREEN = "home"
     const val BATCH_DETAILS_SCREEN = "batch_details/{batchId}"

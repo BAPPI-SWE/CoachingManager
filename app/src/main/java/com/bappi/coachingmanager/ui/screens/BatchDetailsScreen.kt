@@ -282,7 +282,7 @@ fun StudentRow(
         Text(student.name, modifier = Modifier.weight(1f), fontSize = 18.sp)
 
         IconButton(onClick = { navController.navigate("payment_entry/${student.batchId}/${student.id}") }) {
-            Icon(Icons.Default.Edit, contentDescription = "Make Payment", tint = MaterialTheme.colorScheme.primary)
+            Icon(Icons.Default.AddCircle, contentDescription = "Make Payment", tint = MaterialTheme.colorScheme.primary)
         }
         IconButton(onClick = onDeleteClick) {
             Icon(Icons.Default.Delete, contentDescription = "Delete Student", tint = MaterialTheme.colorScheme.error)
