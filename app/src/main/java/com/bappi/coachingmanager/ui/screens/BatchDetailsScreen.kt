@@ -255,7 +255,7 @@ fun StudentListDialog(
                             when (item) {
                                 is StudentPaymentInfo -> {
                                     val student = item.student
-                                    val displayText = if (student.roll.isNotBlank()) "${student.roll}. ${student.name}" else student.name
+                                    val displayText = if (student.roll.isNotBlank()) "${student.name}.(Roll: ${student.roll})" else student.name
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -266,12 +266,12 @@ fun StudentListDialog(
                                         Text(text = displayText)
                                         Text(
                                             text = "৳${item.amountPaid}",
-                                            fontWeight = FontWeight.Bold
+                                            fontWeight = FontWeight.SemiBold
                                         )
                                     }
                                 }
                                 is Student -> {
-                                    val displayText = if (item.roll.isNotBlank()) "${item.roll}. ${item.name}" else item.name
+                                    val displayText = if (item.roll.isNotBlank()) "${item.name}.(Roll: ${item.roll})" else item.name
                                     Text(
                                         text = displayText,
                                         modifier = Modifier
