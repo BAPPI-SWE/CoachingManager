@@ -1,5 +1,6 @@
 package com.bappi.coachingmanager.ui.viewmodels
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bappi.coachingmanager.data.Batch
@@ -23,17 +24,19 @@ class HomeViewModel : ViewModel() {
     }
 
     private fun fetchBatches() {
-        val userId = auth.currentUser?.uid ?: return // Exit if user is not logged in
+        val userId = auth.currentUser?.uid ?: return
 
-        // Listen for real-time updates from Firestore
         db.collection("batches")
             .whereEqualTo("teacherId", userId)
             .orderBy("createdAt")
             .addSnapshotListener { snapshot, error ->
+                // THIS IS THE UPDATED PART
                 if (error != null) {
-                    // Handle error
+                    // We added this Log statement to see the error in Logcat
+                    Log.e("HomeViewModel", "Error fetching batches: ", error)
                     return@addSnapshotListener
                 }
+                // END OF UPDATED PART
                 if (snapshot != null) {
                     val batchList = snapshot.toObjects(Batch::class.java)
                     _batches.value = batchList
@@ -51,12 +54,10 @@ class HomeViewModel : ViewModel() {
                     name = batchName,
                     teacherId = userId,
                     studentCount = 0
-                    // createdAt is handled by @ServerTimestamp
                 )
                 newBatchRef.set(newBatch).await()
-                // The list will update automatically because of the snapshot listener
             } catch (e: Exception) {
-                // Handle error, e.g., show a toast
+                Log.e("HomeViewModel", "Error creating batch: ", e)
             }
         }
     }

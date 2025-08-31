@@ -21,10 +21,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.bappi.coachingmanager.auth.GoogleAuthUiClient
-import com.bappi.coachingmanager.ui.screens.AdmitStudentScreen
-import com.bappi.coachingmanager.ui.screens.BatchDetailsScreen
-import com.bappi.coachingmanager.ui.screens.HomeScreen
-import com.bappi.coachingmanager.ui.screens.LoginScreen
+import com.bappi.coachingmanager.ui.screens.*
 import com.bappi.coachingmanager.ui.theme.CoachingManagerTheme
 import com.bappi.coachingmanager.ui.viewmodels.LoginViewModel
 import com.google.android.gms.auth.api.identity.Identity
@@ -53,7 +50,7 @@ class MainActivity : ComponentActivity() {
 
                     NavHost(navController = navController, startDestination = Routes.LOGIN_SCREEN) {
                         composable(Routes.LOGIN_SCREEN) {
-
+                            // ... Login Screen Logic
                             val viewModel = viewModel<LoginViewModel>()
                             val state by viewModel.state.collectAsStateWithLifecycle()
 
@@ -64,7 +61,6 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                             }
-
                             val launcher = rememberLauncherForActivityResult(
                                 contract = ActivityResultContracts.StartIntentSenderForResult(),
                                 onResult = { result ->
@@ -78,7 +74,6 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                             )
-
                             LaunchedEffect(key1 = state.isSignInSuccessful) {
                                 if (state.isSignInSuccessful) {
                                     Toast.makeText(
@@ -86,14 +81,12 @@ class MainActivity : ComponentActivity() {
                                         "Sign in successful",
                                         Toast.LENGTH_LONG
                                     ).show()
-
                                     navController.navigate(Routes.HOME_SCREEN) {
                                         popUpTo(Routes.LOGIN_SCREEN) { inclusive = true }
                                     }
                                     viewModel.resetState()
                                 }
                             }
-
                             LoginScreen(
                                 state = state,
                                 onSignInClick = {
@@ -122,7 +115,6 @@ class MainActivity : ComponentActivity() {
                                 viewModel = viewModel()
                             )
                         }
-                        // ADD THIS NEW COMPOSABLE BLOCK FOR ADMIT STUDENT SCREEN
                         composable(
                             route = Routes.ADMIT_STUDENT_SCREEN,
                             arguments = listOf(navArgument("batchId") { type = NavType.StringType })
@@ -132,6 +124,25 @@ class MainActivity : ComponentActivity() {
                                 navController = navController,
                                 batchId = batchId
                             )
+                        }
+                        composable(
+                            route = Routes.PAYMENT_ENTRY_SCREEN,
+                            arguments = listOf(
+                                navArgument("batchId") { type = NavType.StringType },
+                                navArgument("studentId") { type = NavType.StringType }
+                            )
+                        ) {
+                            PaymentEntryScreen(navController = navController, viewModel = viewModel())
+                        }
+                        // ADD THIS NEW COMPOSABLE BLOCK FOR STUDENT DETAILS SCREEN
+                        composable(
+                            route = Routes.STUDENT_DETAILS_SCREEN,
+                            arguments = listOf(
+                                navArgument("batchId") { type = NavType.StringType },
+                                navArgument("studentId") { type = NavType.StringType }
+                            )
+                        ) {
+                            StudentDetailsScreen(navController = navController, viewModel = viewModel())
                         }
                     }
                 }
@@ -144,6 +155,8 @@ object Routes {
     const val LOGIN_SCREEN = "login"
     const val HOME_SCREEN = "home"
     const val BATCH_DETAILS_SCREEN = "batch_details/{batchId}"
-    // ADD THIS NEW ROUTE DEFINITION
     const val ADMIT_STUDENT_SCREEN = "admit_student/{batchId}"
+    const val PAYMENT_ENTRY_SCREEN = "payment_entry/{batchId}/{studentId}"
+    // ADD THIS NEW ROUTE DEFINITION
+    const val STUDENT_DETAILS_SCREEN = "student_details/{batchId}/{studentId}"
 }
