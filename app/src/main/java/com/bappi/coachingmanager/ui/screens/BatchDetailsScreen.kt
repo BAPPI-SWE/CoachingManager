@@ -22,8 +22,11 @@ import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import java.text.SimpleDateFormat
 import java.util.*
 
-// NEW: An enum to determine which list to show in the dialog
 private enum class StudentListType { PAID, UNPAID }
+
+// ✅ NEW: A data class to hold a student and their total paid amount for the month.
+private data class StudentPaymentInfo(val student: Student, val amountPaid: Double)
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,26 +43,34 @@ fun BatchDetailsScreen(
     val isRefreshing by viewModel.isRefreshing.collectAsState()
 
     var studentToDelete by remember { mutableStateOf<Student?>(null) }
-
-    // NEW: State to control which student list dialog to show (Paid or Unpaid)
     var listToShow by remember { mutableStateOf<StudentListType?>(null) }
 
-    // NEW: Calculate the lists of paid and unpaid students.
-    // This will only recalculate when the main student list or the selected date changes.
-    val (paidStudents, unpaidStudents) = remember(students, selectedDate) {
+    // ✅ MODIFIED: This logic now calculates the total amount paid for each student in the selected month.
+    val (paidStudentsInfo, unpaidStudents) = remember(students, selectedDate) {
         val calendar = Calendar.getInstance()
         calendar.time = selectedDate
         val targetMonth = calendar.get(Calendar.MONTH)
         val targetYear = calendar.get(Calendar.YEAR)
 
-        students.partition { student ->
-            student.payments.any { payment ->
+        val paid = mutableListOf<StudentPaymentInfo>()
+        val unpaid = mutableListOf<Student>()
+
+        students.forEach { student ->
+            val paymentsInMonth = student.payments.filter { payment ->
                 val paymentCalendar = Calendar.getInstance()
                 paymentCalendar.time = payment.paymentDate
                 paymentCalendar.get(Calendar.MONTH) == targetMonth &&
                         paymentCalendar.get(Calendar.YEAR) == targetYear
             }
+
+            if (paymentsInMonth.isNotEmpty()) {
+                val totalAmount = paymentsInMonth.sumOf { it.amount }
+                paid.add(StudentPaymentInfo(student, totalAmount))
+            } else {
+                unpaid.add(student)
+            }
         }
+        paid to unpaid
     }
 
 
@@ -95,7 +106,6 @@ fun BatchDetailsScreen(
                 selectedDate = selectedDate,
                 onPreviousMonth = { viewModel.changeMonth(-1) },
                 onNextMonth = { viewModel.changeMonth(1) },
-                // NEW: Handle clicks on the stats text
                 onPaidClick = { listToShow = StudentListType.PAID },
                 onUnpaidClick = { listToShow = StudentListType.UNPAID }
             )
@@ -148,10 +158,18 @@ fun BatchDetailsScreen(
         }
     }
 
-    // NEW: Show the dialog when listToShow state is not null
+    // ✅ MODIFIED: The dialog is now called with the correct list type (either StudentPaymentInfo or Student).
     listToShow?.let { type ->
-        val title = if (type == StudentListType.PAID) "Paid Students" else "Unpaid Students"
-        val studentsForDialog = if (type == StudentListType.PAID) paidStudents else unpaidStudents
+        val title: String
+        val studentsForDialog: List<Any>
+
+        if (type == StudentListType.PAID) {
+            title = "Paid Students"
+            studentsForDialog = paidStudentsInfo
+        } else {
+            title = "Unpaid Students"
+            studentsForDialog = unpaidStudents
+        }
 
         StudentListDialog(
             title = title,
@@ -184,11 +202,11 @@ fun BatchDetailsScreen(
     }
 }
 
-// ✅ FIXED: A dialog to display a scrollable list of student names
+// ✅ MODIFIED: The dialog now handles both paid and unpaid student lists, showing the amount for paid students.
 @Composable
 fun StudentListDialog(
     title: String,
-    students: List<Student>,
+    students: List<Any>,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
@@ -198,17 +216,34 @@ fun StudentListDialog(
             if (students.isEmpty()) {
                 Text("No students in this category.")
             } else {
-                // The LazyColumn needs a constrained height to become scrollable
-                // inside a dialog. heightIn provides a max height.
                 LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
-                    items(students) { student ->
+                    items(students) { item ->
                         Column {
-                            Text(
-                                text = student.name,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 8.dp)
-                            )
+                            when (item) {
+                                is StudentPaymentInfo -> {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 8.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(text = item.student.name)
+                                        Text(
+                                            text = "৳${item.amountPaid}",
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                                is Student -> {
+                                    Text(
+                                        text = item.name,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 8.dp)
+                                    )
+                                }
+                            }
                             Divider()
                         }
                     }
@@ -230,7 +265,6 @@ fun StatsSection(
     selectedDate: Date,
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
-    // NEW: Click handlers for the text
     onPaidClick: () -> Unit,
     onUnpaidClick: () -> Unit
 ) {
@@ -258,7 +292,6 @@ fun StatsSection(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                // NEW: Added clickable modifiers
                 Text(
                     text = "✅ Paid: ${stats.paidCount}",
                     color = MaterialTheme.colorScheme.primary,
