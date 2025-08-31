@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -52,13 +53,20 @@ fun StudentDetailsScreen(
                 DetailItem(label = "Class:", value = it.studentClass)
                 DetailItem(label = "Section:", value = it.section)
                 DetailItem(label = "School:", value = it.school)
-                Divider() // Add a separator
+                Divider()
                 Spacer(modifier = Modifier.height(8.dp))
                 // END OF NEW FIELDS
 
                 DetailItem(label = "Roll:", value = it.roll)
                 DetailItem(label = "Phone:", value = it.phone)
                 DetailItem(label = "Address:", value = it.address)
+
+                // ✅ SHOW THE ADMITTED DATE AND TIME
+                it.admissionDate?.let { date ->
+                    val formatter = SimpleDateFormat("dd-MM-yyyy, hh:mm a", Locale.getDefault())
+                    DetailItem(label = "Admitted:", value = formatter.format(date))
+                }
+
 
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
@@ -80,7 +88,7 @@ fun StudentDetailsScreen(
                 }
             }
         } ?: run {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         }

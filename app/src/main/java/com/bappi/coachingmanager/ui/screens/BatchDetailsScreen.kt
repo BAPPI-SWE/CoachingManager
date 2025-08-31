@@ -59,7 +59,8 @@ fun BatchDetailsScreen(
         }
     }
 
-    val (paidStudentsInfo, unpaidStudents) = remember(students, selectedDate) {
+    // ✅ MODIFIED: This logic now also calculates the total collected amount for the month.
+    val (paidStudentsInfo, unpaidStudents, totalCollected) = remember(students, selectedDate) {
         val calendar = Calendar.getInstance()
         calendar.time = selectedDate
         val targetMonth = calendar.get(Calendar.MONTH)
@@ -67,6 +68,7 @@ fun BatchDetailsScreen(
 
         val paid = mutableListOf<StudentPaymentInfo>()
         val unpaid = mutableListOf<Student>()
+        var total = 0.0
 
         students.forEach { student ->
             val paymentsInMonth = student.payments.filter { payment ->
@@ -77,13 +79,14 @@ fun BatchDetailsScreen(
             }
 
             if (paymentsInMonth.isNotEmpty()) {
-                val totalAmount = paymentsInMonth.sumOf { it.amount }
-                paid.add(StudentPaymentInfo(student, totalAmount))
+                val totalAmountForStudent = paymentsInMonth.sumOf { it.amount }
+                paid.add(StudentPaymentInfo(student, totalAmountForStudent))
+                total += totalAmountForStudent
             } else {
                 unpaid.add(student)
             }
         }
-        paid to unpaid
+        Triple(paid, unpaid, total)
     }
 
     val paidStudentIds = remember(students, selectedDate) {
@@ -133,6 +136,7 @@ fun BatchDetailsScreen(
             Spacer(modifier = Modifier.height(8.dp))
             StatsSection(
                 stats = stats,
+                totalCollected = totalCollected, // Pass the new total here
                 selectedDate = selectedDate,
                 onPreviousMonth = { viewModel.changeMonth(-1) },
                 onNextMonth = { viewModel.changeMonth(1) },
@@ -291,9 +295,11 @@ fun StudentListDialog(
 }
 
 
+// ✅ MODIFIED: The StatsSection now accepts and displays the total collected amount.
 @Composable
 fun StatsSection(
     stats: PaymentStats,
+    totalCollected: Double,
     selectedDate: Date,
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
@@ -301,7 +307,10 @@ fun StatsSection(
     onUnpaidClick: () -> Unit
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
@@ -335,11 +344,21 @@ fun StatsSection(
                     modifier = Modifier.clickable(onClick = onUnpaidClick)
                 )
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            Divider()
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // New display for total collected amount
+            Text(
+                text = "Total Collected: ৳${"%.2f".format(totalCollected)}",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
 
-// ✅ MODIFIED: Added an Edit button to the student row.
 @Composable
 fun StudentRow(
     serial: Int,
@@ -370,9 +389,8 @@ fun StudentRow(
 
         Spacer(modifier = Modifier.width(2.dp))
 
-        // New Edit Button
         IconButton(onClick = { navController.navigate("edit_student/${student.batchId}/${student.id}") }) {
-            Icon(Icons.Default.Edit, contentDescription = "Edit Student", tint = Color(0xFF607D8B)) // Blue Grey color
+            Icon(Icons.Default.Edit, contentDescription = "Edit Student", tint = Color(0xFF607D8B))
         }
 
         IconButton(onClick = onDeleteClick) {
