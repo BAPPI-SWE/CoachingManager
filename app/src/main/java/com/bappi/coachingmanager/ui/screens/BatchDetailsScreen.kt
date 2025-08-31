@@ -1,5 +1,6 @@
 package com.bappi.coachingmanager.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -23,8 +25,6 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 private enum class StudentListType { PAID, UNPAID }
-
-// ✅ NEW: A data class to hold a student and their total paid amount for the month.
 private data class StudentPaymentInfo(val student: Student, val amountPaid: Double)
 
 
@@ -45,7 +45,7 @@ fun BatchDetailsScreen(
     var studentToDelete by remember { mutableStateOf<Student?>(null) }
     var listToShow by remember { mutableStateOf<StudentListType?>(null) }
 
-    // ✅ MODIFIED: This logic now calculates the total amount paid for each student in the selected month.
+    // This logic creates the detailed lists for the dialogs.
     val (paidStudentsInfo, unpaidStudents) = remember(students, selectedDate) {
         val calendar = Calendar.getInstance()
         calendar.time = selectedDate
@@ -73,6 +73,23 @@ fun BatchDetailsScreen(
         paid to unpaid
     }
 
+    // ✅ NEW: Create a set of paid student IDs for efficient lookup to highlight rows.
+    val paidStudentIds = remember(students, selectedDate) {
+        val calendar = Calendar.getInstance()
+        calendar.time = selectedDate
+        val targetMonth = calendar.get(Calendar.MONTH)
+        val targetYear = calendar.get(Calendar.YEAR)
+
+        students.filter { student ->
+            student.payments.any { payment ->
+                val paymentCalendar = Calendar.getInstance()
+                paymentCalendar.time = payment.paymentDate
+                paymentCalendar.get(Calendar.MONTH) == targetMonth &&
+                        paymentCalendar.get(Calendar.YEAR) == targetYear
+            }
+        }.map { it.id }.toSet()
+    }
+
 
     Scaffold(
         topBar = {
@@ -90,8 +107,9 @@ fun BatchDetailsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp)
+                .padding(horizontal = 16.dp) // Adjusted padding
         ) {
+            Spacer(modifier = Modifier.height(16.dp))
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { viewModel.onSearchQueryChange(it) },
@@ -121,7 +139,7 @@ fun BatchDetailsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+            Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp, start = 4.dp)) {
                 Text("SL.", modifier = Modifier.width(40.dp), fontWeight = FontWeight.Bold)
                 Text("Name", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
                 Text("Actions", modifier = Modifier.wrapContentWidth(), fontWeight = FontWeight.Bold)
@@ -141,14 +159,16 @@ fun BatchDetailsScreen(
                     }
                 } else {
                     LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxSize()
                     ) {
                         items(students.withIndex().toList()) { (index, student) ->
+                            // ✅ MODIFIED: Check if the student has paid and pass the result to StudentRow.
+                            val isPaid = student.id in paidStudentIds
                             StudentRow(
                                 serial = index + 1,
                                 student = student,
                                 navController = navController,
+                                isPaid = isPaid,
                                 onDeleteClick = { studentToDelete = student }
                             )
                         }
@@ -158,7 +178,6 @@ fun BatchDetailsScreen(
         }
     }
 
-    // ✅ MODIFIED: The dialog is now called with the correct list type (either StudentPaymentInfo or Student).
     listToShow?.let { type ->
         val title: String
         val studentsForDialog: List<Any>
@@ -202,7 +221,6 @@ fun BatchDetailsScreen(
     }
 }
 
-// ✅ MODIFIED: The dialog now handles both paid and unpaid student lists, showing the amount for paid students.
 @Composable
 fun StudentListDialog(
     title: String,
@@ -307,18 +325,23 @@ fun StatsSection(
     }
 }
 
+// ✅ MODIFIED: StudentRow now accepts an `isPaid` flag and changes its background color.
 @Composable
 fun StudentRow(
     serial: Int,
     student: Student,
     navController: NavController,
+    isPaid: Boolean,
     onDeleteClick: () -> Unit
 ) {
+    val rowColor = if (isPaid) Color(0xFFE8F5E9) else MaterialTheme.colorScheme.surface
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .background(color = rowColor)
             .clickable { navController.navigate("student_details/${student.batchId}/${student.id}") }
-            .padding(vertical = 8.dp),
+            .padding(vertical = 8.dp, horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(serial.toString(), modifier = Modifier.width(40.dp))
