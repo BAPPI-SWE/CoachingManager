@@ -15,10 +15,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.bappi.coachingmanager.auth.GoogleAuthUiClient
+import com.bappi.coachingmanager.ui.screens.BatchDetailsScreen
 import com.bappi.coachingmanager.ui.screens.HomeScreen // Correct import
 import com.bappi.coachingmanager.ui.screens.LoginScreen // Correct import
 import com.bappi.coachingmanager.ui.theme.CoachingManagerTheme
@@ -107,6 +110,15 @@ class MainActivity : ComponentActivity() {
                         composable(Routes.HOME_SCREEN) {
                             HomeScreen(navController = navController)
                         }
+                        composable(
+                            route = Routes.BATCH_DETAILS_SCREEN,
+                            // This part defines the arguments we can pass
+                            arguments = listOf(navArgument("batchId") { type = NavType.StringType })
+                        ) { backStackEntry ->
+                            // This gets the batchId that was passed
+                            val batchId = backStackEntry.arguments?.getString("batchId") ?: ""
+                            BatchDetailsScreen(navController = navController, batchId = batchId , viewModel = viewModel())
+                        }
                     }
                 }
             }
@@ -118,4 +130,5 @@ class MainActivity : ComponentActivity() {
 object Routes {
     const val LOGIN_SCREEN = "login"
     const val HOME_SCREEN = "home"
+    const val BATCH_DETAILS_SCREEN = "batch_details/{batchId}"
 }
