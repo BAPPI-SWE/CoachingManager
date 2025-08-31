@@ -27,25 +27,40 @@ class BatchDetailsViewModel(
     private val _batch = MutableStateFlow<Batch?>(null)
     val batch = _batch.asStateFlow()
 
+    // This will hold the full, unfiltered list of students
     private val _students = MutableStateFlow<List<Student>>(emptyList())
-    val students = _students.asStateFlow()
 
-    // State for the selected month and year for stats
+    // NEW: State for the search query
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery = _searchQuery.asStateFlow()
+
+    // NEW: A publicly exposed, filtered list of students
+    val filteredStudents: StateFlow<List<Student>> = combine(_students, _searchQuery) { students, query ->
+        if (query.isBlank()) {
+            students
+        } else {
+            students.filter { it.name.contains(query, ignoreCase = true) }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+
     private val _selectedDate = MutableStateFlow(Calendar.getInstance().time)
     val selectedDate = _selectedDate.asStateFlow()
 
-    // State to hold the calculated payment stats
-    val paymentStats: StateFlow<PaymentStats> = combine(students, selectedDate) { studentList, date ->
+    val paymentStats: StateFlow<PaymentStats> = combine(_students, selectedDate) { studentList, date ->
         calculateStats(studentList, date)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PaymentStats())
-
 
     init {
         fetchBatchDetails()
         fetchStudents()
     }
 
-    // Function to change the month for the stats
+    // NEW: Function to update the search query
+    fun onSearchQueryChange(query: String) {
+        _searchQuery.value = query
+    }
+
     fun changeMonth(amount: Int) {
         val calendar = Calendar.getInstance()
         calendar.time = _selectedDate.value
@@ -77,8 +92,6 @@ class BatchDetailsViewModel(
     fun deleteStudent(studentId: String) {
         viewModelScope.launch {
             try {
-                // We use a batch write to delete the student AND decrement the
-                // studentCount on the batch document in a single, atomic operation.
                 db.runBatch { batch ->
                     val studentRef = db.collection("batches").document(batchId)
                         .collection("students").document(studentId)
@@ -93,7 +106,6 @@ class BatchDetailsViewModel(
         }
     }
 
-
     private fun fetchBatchDetails() {
         db.collection("batches").document(batchId)
             .addSnapshotListener { snapshot, _ ->
@@ -103,7 +115,7 @@ class BatchDetailsViewModel(
 
     private fun fetchStudents() {
         db.collection("batches").document(batchId).collection("students")
-            .orderBy("name") // Let's sort students by name
+            .orderBy("name")
             .addSnapshotListener { snapshot, _ ->
                 if (snapshot != null) {
                     _students.value = snapshot.toObjects(Student::class.java)

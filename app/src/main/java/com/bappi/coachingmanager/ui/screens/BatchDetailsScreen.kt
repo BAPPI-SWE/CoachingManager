@@ -28,11 +28,12 @@ fun BatchDetailsScreen(
     viewModel: BatchDetailsViewModel
 ) {
     val batch by viewModel.batch.collectAsState()
-    val students by viewModel.students.collectAsState()
+    // UPDATE: Use the new filteredStudents list for the UI
+    val students by viewModel.filteredStudents.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedDate by viewModel.selectedDate.collectAsState()
     val stats by viewModel.paymentStats.collectAsState()
 
-    // State to control the delete confirmation dialog
     var studentToDelete by remember { mutableStateOf<Student?>(null) }
 
     Scaffold(
@@ -53,7 +54,16 @@ fun BatchDetailsScreen(
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            // New Stats Section
+            // NEW: Add the search field
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { viewModel.onSearchQueryChange(it) },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Search by name...") },
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
             StatsSection(
                 stats = stats,
                 selectedDate = selectedDate,
@@ -81,7 +91,7 @@ fun BatchDetailsScreen(
 
             if (students.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No students admitted yet.")
+                    Text("No students found.") // Updated message
                 }
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -90,7 +100,7 @@ fun BatchDetailsScreen(
                             serial = index + 1,
                             student = student,
                             navController = navController,
-                            onDeleteClick = { studentToDelete = student } // Trigger dialog
+                            onDeleteClick = { studentToDelete = student }
                         )
                     }
                 }
@@ -98,7 +108,6 @@ fun BatchDetailsScreen(
         }
     }
 
-    // Confirmation Dialog for Deletion
     studentToDelete?.let { student ->
         AlertDialog(
             onDismissRequest = { studentToDelete = null },
@@ -122,6 +131,8 @@ fun BatchDetailsScreen(
     }
 }
 
+// StatsSection and StudentRow composables remain the same...
+// ... (You can keep your existing code for these)
 @Composable
 fun StatsSection(
     stats: PaymentStats,
@@ -180,7 +191,6 @@ fun StudentRow(
         IconButton(onClick = { navController.navigate("payment_entry/${student.batchId}/${student.id}") }) {
             Icon(Icons.Default.Edit, contentDescription = "Make Payment", tint = MaterialTheme.colorScheme.primary)
         }
-        // Connect the delete click handler
         IconButton(onClick = onDeleteClick) {
             Icon(Icons.Default.Delete, contentDescription = "Delete Student", tint = MaterialTheme.colorScheme.error)
         }
