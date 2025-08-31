@@ -367,7 +367,7 @@ fun StudentRow(
     isPaid: Boolean,
     onDeleteClick: () -> Unit
 ) {
-    val rowColor = if (isPaid) Color(0xFFE8F5E9) else MaterialTheme.colorScheme.surface
+    val rowColor = if (isPaid) Color(0xFFD7FCD7) else MaterialTheme.colorScheme.surface
 
     Row(
         modifier = Modifier
