@@ -76,4 +76,9 @@ dependencies {
     implementation("com.google.android.gms:play-services-auth:21.2.0")
 
     implementation("androidx.compose.runtime:runtime-livedata:1.6.8")
+
+
+
+    // Or if you're using the BOM approach:
+    implementation("androidx.compose.material:material-icons-extended")
 }

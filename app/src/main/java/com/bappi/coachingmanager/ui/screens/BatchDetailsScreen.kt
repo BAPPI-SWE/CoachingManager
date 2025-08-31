@@ -5,6 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -12,8 +14,12 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -27,7 +33,6 @@ import java.util.*
 
 private enum class StudentListType { PAID, UNPAID }
 private data class StudentPaymentInfo(val student: Student, val amountPaid: Double)
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,7 +64,6 @@ fun BatchDetailsScreen(
         }
     }
 
-    // ✅ MODIFIED: This logic now also calculates the total collected amount for the month.
     val (paidStudentsInfo, unpaidStudents, totalCollected) = remember(students, selectedDate) {
         val calendar = Calendar.getInstance()
         calendar.time = selectedDate
@@ -105,87 +109,134 @@ fun BatchDetailsScreen(
         }.map { it.id }.toSet()
     }
 
-
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(batch?.name ?: "Batch Details") },
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        batch?.name ?: "Batch Details",
+                        fontWeight = FontWeight.Bold
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { navController.navigate("admit_student/$batchId") },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.shadow(8.dp, CircleShape)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PersonAdd,
+                    contentDescription = "Admit New Student"
+                )
+            }
         }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp)
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+                        )
+                    )
+                )
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { viewModel.onSearchQueryChange(it) },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Search by name...") },
-                singleLine = true
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-            StatsSection(
-                stats = stats,
-                totalCollected = totalCollected, // Pass the new total here
-                selectedDate = selectedDate,
-                onPreviousMonth = { viewModel.changeMonth(-1) },
-                onNextMonth = { viewModel.changeMonth(1) },
-                onPaidClick = { listToShow = StudentListType.PAID },
-                onUnpaidClick = { listToShow = StudentListType.UNPAID }
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = { navController.navigate("admit_student/$batchId") },
-                modifier = Modifier.fillMaxWidth()
+            // Modern Header Section
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                        shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
+                    )
+                    .padding(24.dp)
             ) {
-                Text("Admit New Student +")
+                // Search Bar
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { viewModel.onSearchQueryChange(it) },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Search students...") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Search"
+                        )
+                    },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Stats Section
+                ModernStatsSection(
+                    stats = stats,
+                    totalCollected = totalCollected,
+                    selectedDate = selectedDate,
+                    onPreviousMonth = { viewModel.changeMonth(-1) },
+                    onNextMonth = { viewModel.changeMonth(1) },
+                    onPaidClick = { listToShow = StudentListType.PAID },
+                    onUnpaidClick = { listToShow = StudentListType.UNPAID }
+                )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp, start = 4.dp)) {
-                Text("SL.", modifier = Modifier.width(40.dp), fontWeight = FontWeight.Bold)
-                Text("Name", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
-                Text("Actions", modifier = Modifier.wrapContentWidth(), fontWeight = FontWeight.Bold)
-            }
-            Divider()
+            // Students List
+            Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                Text(
+                    text = "Students (${students.size})",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
 
-            val swipeRefreshState = rememberSwipeRefreshState(isRefreshing)
+                Spacer(modifier = Modifier.height(16.dp))
 
-            SwipeRefresh(
-                state = swipeRefreshState,
-                onRefresh = { viewModel.refresh() },
-                modifier = Modifier.fillMaxSize()
-            ) {
-                if (students.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("No students found.")
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        items(students.withIndex().toList()) { (index, student) ->
-                            val isPaid = student.id in paidStudentIds
-                            StudentRow(
-                                serial = index + 1,
-                                student = student,
-                                navController = navController,
-                                isPaid = isPaid,
-                                onDeleteClick = { studentToDelete = student }
-                            )
+                val swipeRefreshState = rememberSwipeRefreshState(isRefreshing)
+
+                SwipeRefresh(
+                    state = swipeRefreshState,
+                    onRefresh = { viewModel.refresh() },
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    if (students.isEmpty()) {
+                        EmptyStudentsCard()
+                    } else {
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            items(students.withIndex().toList()) { (index, student) ->
+                                val isPaid = student.id in paidStudentIds
+                                ModernStudentCard(
+                                    serial = index + 1,
+                                    student = student,
+                                    navController = navController,
+                                    isPaid = isPaid,
+                                    onDeleteClick = { studentToDelete = student }
+                                )
+                            }
                         }
                     }
                 }
@@ -193,6 +244,7 @@ fun BatchDetailsScreen(
         }
     }
 
+    // Dialogs
     listToShow?.let { type ->
         val title: String
         val studentsForDialog: List<Any>
@@ -205,99 +257,150 @@ fun BatchDetailsScreen(
             studentsForDialog = unpaidStudents
         }
 
-        StudentListDialog(
+        ModernStudentListDialog(
             title = title,
             students = studentsForDialog,
             onDismiss = { listToShow = null }
         )
     }
 
-
     studentToDelete?.let { student ->
         AlertDialog(
             onDismissRequest = { studentToDelete = null },
-            title = { Text("Delete Student") },
-            text = { Text("Are you sure you want to delete ${student.name}? This action cannot be undone.") },
+            title = {
+                Text(
+                    "Delete Student",
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.error
+                )
+            },
+            text = {
+                Text("Are you sure you want to delete ${student.name}? This action cannot be undone.")
+            },
             confirmButton = {
                 Button(
                     onClick = {
                         viewModel.deleteStudent(student.id)
                         studentToDelete = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) { Text("Delete") }
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Delete", fontWeight = FontWeight.SemiBold)
+                }
             },
             dismissButton = {
-                Button(onClick = { studentToDelete = null }) {
+                TextButton(
+                    onClick = { studentToDelete = null },
+                    shape = RoundedCornerShape(12.dp)
+                ) {
                     Text("Cancel")
                 }
-            }
+            },
+            shape = RoundedCornerShape(20.dp)
         )
     }
 }
 
 @Composable
-fun StudentListDialog(
+fun ModernStudentListDialog(
     title: String,
     students: List<Any>,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(title) },
+        title = {
+            Text(
+                title,
+                fontWeight = FontWeight.Bold
+            )
+        },
         text = {
             if (students.isEmpty()) {
-                Text("No students in this category.")
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(24.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Group,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        "No students in this category",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             } else {
-                LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 400.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     items(students) { item ->
-                        Column {
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
                             when (item) {
                                 is StudentPaymentInfo -> {
                                     val student = item.student
-                                    val displayText = if (student.roll.isNotBlank()) "${student.name}.(Roll: ${student.roll})" else student.name
+                                    val displayText = if (student.roll.isNotBlank())
+                                        "${student.name} (Roll: ${student.roll})" else student.name
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(vertical = 8.dp),
+                                            .padding(16.dp),
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(text = displayText)
+                                        Text(
+                                            text = displayText,
+                                            modifier = Modifier.weight(1f)
+                                        )
                                         Text(
                                             text = "৳${item.amountPaid}",
-                                            fontWeight = FontWeight.SemiBold
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
                                         )
                                     }
                                 }
                                 is Student -> {
-                                    val displayText = if (item.roll.isNotBlank()) "${item.name}.(Roll: ${item.roll})" else item.name
+                                    val displayText = if (item.roll.isNotBlank())
+                                        "${item.name} (Roll: ${item.roll})" else item.name
                                     Text(
                                         text = displayText,
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(vertical = 8.dp)
+                                            .padding(16.dp)
                                     )
                                 }
                             }
-                            Divider()
                         }
                     }
                 }
             }
         },
         confirmButton = {
-            Button(onClick = onDismiss) {
-                Text("Close")
+            Button(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Close", fontWeight = FontWeight.SemiBold)
             }
-        }
+        },
+        shape = RoundedCornerShape(20.dp)
     )
 }
 
-
-// ✅ MODIFIED: The StatsSection now accepts and displays the total collected amount.
 @Composable
-fun StatsSection(
+fun ModernStatsSection(
     stats: PaymentStats,
     totalCollected: Double,
     selectedDate: Date,
@@ -306,96 +409,389 @@ fun StatsSection(
     onPaidClick: () -> Unit,
     onUnpaidClick: () -> Unit
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+    ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Month Navigation
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onPreviousMonth) {
-                    Icon(Icons.Default.KeyboardArrowLeft, contentDescription = "Previous Month")
+                IconButton(
+                    onClick = onPreviousMonth,
+                    modifier = Modifier
+                        .background(
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                            CircleShape
+                        )
+                ) {
+                    Icon(
+                        Icons.Default.KeyboardArrowLeft,
+                        contentDescription = "Previous Month",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                 }
+
                 Text(
                     text = SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(selectedDate),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
-                IconButton(onClick = onNextMonth) {
-                    Icon(Icons.Default.KeyboardArrowRight, contentDescription = "Next Month")
+
+                IconButton(
+                    onClick = onNextMonth,
+                    modifier = Modifier
+                        .background(
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                            CircleShape
+                        )
+                ) {
+                    Icon(
+                        Icons.Default.KeyboardArrowRight,
+                        contentDescription = "Next Month",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Stats Cards
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    text = "✅ Paid: ${stats.paidCount}",
+                StatCard(
+                    title = "Paid",
+                    value = stats.paidCount.toString(),
+                    icon = Icons.Default.CheckCircle,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.clickable(onClick = onPaidClick)
+                    onClick = onPaidClick,
+                    modifier = Modifier.weight(1f)
                 )
-                Text(
-                    text = "❌ Unpaid: ${stats.unpaidCount}",
+
+                StatCard(
+                    title = "Unpaid",
+                    value = stats.unpaidCount.toString(),
+                    icon = Icons.Default.Cancel,
                     color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.clickable(onClick = onUnpaidClick)
+                    onClick = onUnpaidClick,
+                    modifier = Modifier.weight(1f)
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-            Divider()
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // New display for total collected amount
+            Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Total Collection
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Total Collection",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "৳${"%.2f".format(totalCollected)}",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun StatCard(
+    title: String,
+    value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    color: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.clickable { onClick() },
+        colors = CardDefaults.cardColors(
+            containerColor = color.copy(alpha = 0.1f)
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Total Collected: ৳${"%.2f".format(totalCollected)}",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                text = value,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = color
+            )
+            Text(
+                text = title,
+                fontSize = 12.sp,
+                color = color.copy(alpha = 0.8f)
             )
         }
     }
 }
 
 @Composable
-fun StudentRow(
+fun ModernStudentCard(
     serial: Int,
     student: Student,
     navController: NavController,
     isPaid: Boolean,
     onDeleteClick: () -> Unit
 ) {
-    val rowColor = if (isPaid) Color(0xFFD7FCD7) else MaterialTheme.colorScheme.surface
-
-    Row(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .background(color = rowColor)
-            .clickable { navController.navigate("student_details/${student.batchId}/${student.id}") }
-            .padding(vertical = 4.dp, horizontal = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .clickable {
+                navController.navigate("student_details/${student.batchId}/${student.id}")
+            },
+        colors = CardDefaults.cardColors(
+            containerColor = if (isPaid)
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+            else MaterialTheme.colorScheme.surface
+        ),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Text(serial.toString(), modifier = Modifier.width(40.dp))
-        Text(student.name, modifier = Modifier.weight(1f), fontSize = 18.sp)
+        Box {
+            // Payment status indicator
+            if (isPaid) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(4.dp)
+                        .background(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.colorScheme.secondary
+                                )
+                            )
+                        )
+                )
+            }
 
-        Button(
-            onClick = { navController.navigate("payment_entry/${student.batchId}/${student.id}") },
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
-        ) {
-            Text("Pay", fontSize = 12.sp)
-        }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Serial number with avatar style
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(
+                            if (isPaid) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                            else MaterialTheme.colorScheme.surfaceVariant,
+                            CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = serial.toString(),
+                        fontWeight = FontWeight.Bold,
+                        color = if (isPaid) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 14.sp
+                    )
+                }
 
-        Spacer(modifier = Modifier.width(2.dp))
+                Spacer(modifier = Modifier.width(16.dp))
 
-        IconButton(onClick = { navController.navigate("edit_student/${student.batchId}/${student.id}") }) {
-            Icon(Icons.Default.Edit, contentDescription = "Edit Student", tint = Color(0xFF607D8B))
-        }
+                // Student info
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = student.name,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    if (student.roll.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Roll: ${student.roll}",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
 
-        IconButton(onClick = onDeleteClick) {
-            Icon(Icons.Default.Delete, contentDescription = "Delete Student", tint = MaterialTheme.colorScheme.error)
+                // Payment status badge
+                if (isPaid) {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = "PAID",
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+
+                // Action buttons
+                Row {
+                    IconButton(
+                        onClick = {
+                            navController.navigate("payment_entry/${student.batchId}/${student.id}")
+                        },
+                        modifier = Modifier
+                            .background(
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                CircleShape
+                            )
+                            .size(36.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Payment,
+                            contentDescription = "Payment",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    IconButton(
+                        onClick = {
+                            navController.navigate("edit_student/${student.batchId}/${student.id}")
+                        },
+                        modifier = Modifier
+                            .background(
+                                MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f),
+                                CircleShape
+                            )
+                            .size(36.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = "Edit",
+                            tint = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    IconButton(
+                        onClick = onDeleteClick,
+                        modifier = Modifier
+                            .background(
+                                MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
+                                CircleShape
+                            )
+                            .size(36.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Delete",
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            }
         }
     }
-    Divider()
+}
+
+@Composable
+fun EmptyStudentsCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+        shape = RoundedCornerShape(20.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(48.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .background(
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                        CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Group,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(40.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "No students yet",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Admit students to get started",
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
 }
