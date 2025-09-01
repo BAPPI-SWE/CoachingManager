@@ -48,7 +48,7 @@ class PaymentEntryViewModel(
 
                 // This command adds the new payment to the 'payments' array
                 // without overwriting existing payments.
-                studentDocRef.update("payments", FieldValue.arrayUnion(newPayment)).await()
+                studentDocRef.update("payments", FieldValue.arrayUnion(newPayment))
 
                 _saveUiState.value = SaveUiState(isSuccess = true)
 

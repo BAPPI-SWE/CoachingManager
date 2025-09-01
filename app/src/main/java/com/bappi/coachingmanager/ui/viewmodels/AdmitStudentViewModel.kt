@@ -69,7 +69,7 @@ class AdmitStudentViewModel : ViewModel() {
 
                     val batchRef = Firebase.firestore.collection("batches").document(batchId)
                     batch.update(batchRef, "studentCount", FieldValue.increment(1))
-                }.await()
+                }
 
                 _saveUiState.value = SaveUiState(isSuccess = true)
             } catch (e: Exception) {

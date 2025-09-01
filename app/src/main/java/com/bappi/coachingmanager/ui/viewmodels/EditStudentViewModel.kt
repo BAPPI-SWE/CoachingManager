@@ -85,7 +85,7 @@ class EditStudentViewModel(
                     "section" to formState.section,
                     "school" to formState.school
                 )
-                studentDocRef.update(updatedData).await()
+                studentDocRef.update(updatedData)
                 _updateUiState.value = SaveUiState(isSuccess = true)
             } catch (e: Exception) {
                 _updateUiState.value = SaveUiState(error = e.message)

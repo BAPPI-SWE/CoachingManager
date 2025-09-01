@@ -163,14 +163,14 @@ fun BatchDetailsScreen(
                         MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
                         shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
                     )
-                    .padding(24.dp)
+                    .padding(16.dp)
             ) {
                 // Search Bar
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { viewModel.onSearchQueryChange(it) },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Search students...") },
+                    label = { Text("Search students of this Batch") },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Search,
@@ -186,7 +186,7 @@ fun BatchDetailsScreen(
                     )
                 )
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 // Stats Section
                 ModernStatsSection(
@@ -200,18 +200,18 @@ fun BatchDetailsScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Students List
-            Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                 Text(
                     text = "Students (${students.size})",
-                    fontSize = 20.sp,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 val swipeRefreshState = rememberSwipeRefreshState(isRefreshing)
 
@@ -224,7 +224,7 @@ fun BatchDetailsScreen(
                         EmptyStudentsCard()
                     } else {
                         LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
                             modifier = Modifier.fillMaxSize()
                         ) {
                             items(students.withIndex().toList()) { (index, student) ->
@@ -236,6 +236,15 @@ fun BatchDetailsScreen(
                                     isPaid = isPaid,
                                     onDeleteClick = { studentToDelete = student }
                                 )
+
+                                // Add subtle divider between rows (like Excel)
+                                if (index < students.size - 1) {
+                                    Divider(
+                                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
+                                        thickness = 0.5.dp,
+                                        modifier = Modifier.padding(horizontal = 16.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -414,14 +423,14 @@ fun ModernStatsSection(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Month Navigation
+            // Month Navigation - More Compact
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -430,6 +439,7 @@ fun ModernStatsSection(
                 IconButton(
                     onClick = onPreviousMonth,
                     modifier = Modifier
+                        .size(32.dp)
                         .background(
                             MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
                             CircleShape
@@ -438,13 +448,14 @@ fun ModernStatsSection(
                     Icon(
                         Icons.Default.KeyboardArrowLeft,
                         contentDescription = "Previous Month",
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
 
                 Text(
-                    text = SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(selectedDate),
-                    style = MaterialTheme.typography.titleLarge,
+                    text = SimpleDateFormat("MMM yyyy", Locale.getDefault()).format(selectedDate),
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -452,6 +463,7 @@ fun ModernStatsSection(
                 IconButton(
                     onClick = onNextMonth,
                     modifier = Modifier
+                        .size(32.dp)
                         .background(
                             MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
                             CircleShape
@@ -460,19 +472,21 @@ fun ModernStatsSection(
                     Icon(
                         Icons.Default.KeyboardArrowRight,
                         contentDescription = "Next Month",
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Stats Cards
+            // Combined Stats Row - Single Row Layout
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                StatCard(
+                // Paid Stats
+                CompactStatCard(
                     title = "Paid",
                     value = stats.paidCount.toString(),
                     icon = Icons.Default.CheckCircle,
@@ -481,7 +495,8 @@ fun ModernStatsSection(
                     modifier = Modifier.weight(1f)
                 )
 
-                StatCard(
+                // Unpaid Stats
+                CompactStatCard(
                     title = "Unpaid",
                     value = stats.unpaidCount.toString(),
                     icon = Icons.Default.Cancel,
@@ -489,41 +504,86 @@ fun ModernStatsSection(
                     onClick = onUnpaidClick,
                     modifier = Modifier.weight(1f)
                 )
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Total Collection
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                ),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                // Total Collection - Integrated in same row
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.weight(1.2f)
                 ) {
-                    Text(
-                        text = "Total Collection",
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "৳${"%.2f".format(totalCollected)}",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AccountBalance,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "৳${"%.0f".format(totalCollected)}",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "Total Collected",
+                            fontSize = 10.sp,
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                        )
+                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun CompactStatCard(
+    title: String,
+    value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    color: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.clickable { onClick() },
+        colors = CardDefaults.cardColors(
+            containerColor = color.copy(alpha = 0.1f)
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = value,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = color
+            )
+            Text(
+                text = title,
+                fontSize = 10.sp,
+                color = color.copy(alpha = 0.8f)
+            )
         }
     }
 }
@@ -580,165 +640,111 @@ fun ModernStudentCard(
     isPaid: Boolean,
     onDeleteClick: () -> Unit
 ) {
-    Card(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
+            .background(
+                if (isPaid) Color(0xFF37803A).copy(alpha = 0.08f)
+                else Color.Transparent
+            )
             .clickable {
                 navController.navigate("student_details/${student.batchId}/${student.id}")
-            },
-        colors = CardDefaults.cardColors(
-            containerColor = if (isPaid)
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-            else MaterialTheme.colorScheme.surface
-        ),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            }
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Box {
-            // Payment status indicator
-            if (isPaid) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(4.dp)
-                        .background(
-                            brush = Brush.horizontalGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.primary,
-                                    MaterialTheme.colorScheme.secondary
-                                )
+        // Serial number - simple text
+        Text(
+            text = serial.toString(),
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(24.dp)
+        )
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        // Student info - takes most space
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = student.name,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                // Simple payment indicator
+                if (isPaid) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .background(
+                                Color(0xFF4CAF50),
+                                CircleShape
                             )
-                        )
+                    )
+                }
+            }
+
+            if (student.roll.isNotBlank()) {
+                Text(
+                    text = "Roll: ${student.roll}",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        // Simple action buttons
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Payment button
+            Button(
+                onClick = {
+                    navController.navigate("payment_entry/${student.batchId}/${student.id}")
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                ),
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                modifier = Modifier.height(28.dp)
+            ) {
+                Text(
+                    text = "Pay",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onPrimary
                 )
             }
 
-            Row(
+            // Edit button
+            Icon(
+                Icons.Default.Edit,
+                contentDescription = "Edit",
+                tint = MaterialTheme.colorScheme.secondary,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Serial number with avatar style
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(
-                            if (isPaid) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                            else MaterialTheme.colorScheme.surfaceVariant,
-                            CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = serial.toString(),
-                        fontWeight = FontWeight.Bold,
-                        color = if (isPaid) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 14.sp
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                // Student info
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = student.name,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    if (student.roll.isNotBlank()) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Roll: ${student.roll}",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    .size(20.dp)
+                    .clickable {
+                        navController.navigate("edit_student/${student.batchId}/${student.id}")
                     }
-                }
+            )
 
-                // Payment status badge
-                if (isPaid) {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        ),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text(
-                            text = "PAID",
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                }
-
-                // Action buttons
-                Row {
-                    IconButton(
-                        onClick = {
-                            navController.navigate("payment_entry/${student.batchId}/${student.id}")
-                        },
-                        modifier = Modifier
-                            .background(
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                CircleShape
-                            )
-                            .size(36.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Payment,
-                            contentDescription = "Payment",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    IconButton(
-                        onClick = {
-                            navController.navigate("edit_student/${student.batchId}/${student.id}")
-                        },
-                        modifier = Modifier
-                            .background(
-                                MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f),
-                                CircleShape
-                            )
-                            .size(36.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Edit,
-                            contentDescription = "Edit",
-                            tint = MaterialTheme.colorScheme.secondary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    IconButton(
-                        onClick = onDeleteClick,
-                        modifier = Modifier
-                            .background(
-                                MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
-                                CircleShape
-                            )
-                            .size(36.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = "Delete",
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-            }
+            // Delete button
+            Icon(
+                Icons.Default.Delete,
+                contentDescription = "Delete",
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier
+                    .size(20.dp)
+                    .clickable { onDeleteClick() }
+            )
         }
     }
 }

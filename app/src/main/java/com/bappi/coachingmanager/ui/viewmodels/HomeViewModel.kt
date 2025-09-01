@@ -98,7 +98,7 @@ class HomeViewModel : ViewModel() {
                     teacherId = userId,
                     studentCount = 0
                 )
-                newBatchRef.set(newBatch).await()
+                newBatchRef.set(newBatch)
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Error creating batch: ", e)
             }
@@ -112,7 +112,7 @@ class HomeViewModel : ViewModel() {
             try {
                 db.collection("batches").document(batchId)
                     .update("name", newName)
-                    .await()
+
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Error updating batch name: ", e)
             }
@@ -125,7 +125,7 @@ class HomeViewModel : ViewModel() {
             try {
                 // Note: This is a simplified delete. For production, you might want to
                 // delete all students in the batch in a batched write for safety.
-                db.collection("batches").document(batchId).delete().await()
+                db.collection("batches").document(batchId).delete()
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Error deleting batch: ", e)
             }
