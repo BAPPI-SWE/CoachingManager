@@ -10,12 +10,30 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
+import java.text.SimpleDateFormat
+import java.util.*
 
 // Data class to combine Student and their Batch Name for search results
 data class StudentSearchResult(
     val student: Student,
     val batchName: String
+)
+
+// Dashboard statistics data class
+data class DashboardStats(
+    val monthlyCollection: Double = 0.0,
+    val yearlyCollection: Double = 0.0,
+    val totalStudents: Int = 0,
+    val monthlyPaidStudents: Int = 0,
+    val monthlyUnpaidStudents: Int = 0
+)
+
+// Payment summary for dialog display
+data class PaymentSummary(
+    val period: String = "",
+    val amount: Double = 0.0,
+    val studentName: String = "",
+    val batchName: String = ""
 )
 
 class HomeViewModel : ViewModel() {
@@ -44,6 +62,11 @@ class HomeViewModel : ViewModel() {
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    // Dashboard statistics
+    val dashboardStats: StateFlow<DashboardStats> =
+        combine(_allStudents, batches) { students, _ ->
+            calculateDashboardStats(students)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardStats())
 
     init {
         fetchBatchesAndStudents()
@@ -86,6 +109,172 @@ class HomeViewModel : ViewModel() {
             }
     }
 
+    private fun calculateDashboardStats(students: List<Student>): DashboardStats {
+        val currentDate = Date()
+        val calendar = Calendar.getInstance()
+        calendar.time = currentDate
+
+        val currentMonth = calendar.get(Calendar.MONTH)
+        val currentYear = calendar.get(Calendar.YEAR)
+
+        var monthlyCollection = 0.0
+        var yearlyCollection = 0.0
+        var monthlyPaidStudents = 0
+        val totalStudents = students.size
+
+        students.forEach { student ->
+            var hasMonthlyPayment = false
+
+            student.payments.forEach { payment ->
+                val paymentCalendar = Calendar.getInstance()
+                paymentCalendar.time = payment.paymentDate
+                val paymentMonth = paymentCalendar.get(Calendar.MONTH)
+                val paymentYear = paymentCalendar.get(Calendar.YEAR)
+
+                // Monthly collection
+                if (paymentMonth == currentMonth && paymentYear == currentYear) {
+                    monthlyCollection += payment.amount
+                    hasMonthlyPayment = true
+                }
+
+                // Yearly collection
+                if (paymentYear == currentYear) {
+                    yearlyCollection += payment.amount
+                }
+            }
+
+            if (hasMonthlyPayment) {
+                monthlyPaidStudents++
+            }
+        }
+
+        val monthlyUnpaidStudents = totalStudents - monthlyPaidStudents
+
+        return DashboardStats(
+            monthlyCollection = monthlyCollection,
+            yearlyCollection = yearlyCollection,
+            totalStudents = totalStudents,
+            monthlyPaidStudents = monthlyPaidStudents,
+            monthlyUnpaidStudents = monthlyUnpaidStudents
+        )
+    }
+
+    fun getSummaryData(statType: String): StateFlow<List<PaymentSummary>> {
+        return combine(_allStudents, _batches) { students, batchList ->
+            when (statType) {
+                "monthly_collection" -> getMonthlyCollectionSummary(students)
+                "yearly_collection" -> getYearlyCollectionSummary(students)
+                "total_students" -> getTotalStudentsSummary(students, batchList)
+                "paid_students" -> getPaidStudentsSummary(students, batchList)
+                "unpaid_students" -> getUnpaidStudentsSummary(students, batchList)
+                else -> emptyList()
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }
+
+    private fun getMonthlyCollectionSummary(students: List<Student>): List<PaymentSummary> {
+        val monthlyData = mutableMapOf<String, Double>()
+        val dateFormat = SimpleDateFormat("MMM yyyy", Locale.getDefault())
+
+        students.forEach { student ->
+            student.payments.forEach { payment ->
+                val monthKey = dateFormat.format(payment.paymentDate)
+                monthlyData[monthKey] = monthlyData.getOrDefault(monthKey, 0.0) + payment.amount
+            }
+        }
+
+        return monthlyData.map { (month, amount) ->
+            PaymentSummary(period = month, amount = amount)
+        }.sortedByDescending { it.period }
+    }
+
+    private fun getYearlyCollectionSummary(students: List<Student>): List<PaymentSummary> {
+        val yearlyData = mutableMapOf<String, Double>()
+        val calendar = Calendar.getInstance()
+
+        students.forEach { student ->
+            student.payments.forEach { payment ->
+                calendar.time = payment.paymentDate
+                val year = calendar.get(Calendar.YEAR).toString()
+                yearlyData[year] = yearlyData.getOrDefault(year, 0.0) + payment.amount
+            }
+        }
+
+        return yearlyData.map { (year, amount) ->
+            PaymentSummary(period = year, amount = amount)
+        }.sortedByDescending { it.period }
+    }
+
+    private fun getTotalStudentsSummary(students: List<Student>, batches: List<Batch>): List<PaymentSummary> {
+        return students.map { student ->
+            val batch = batches.find { it.id == student.batchId }
+            val lastPayment = student.payments.maxByOrNull { it.paymentDate }
+
+            PaymentSummary(
+                studentName = student.name,
+                batchName = batch?.name ?: "Unknown Batch",
+                amount = lastPayment?.amount ?: 0.0
+            )
+        }.sortedBy { it.studentName }
+    }
+
+    private fun getPaidStudentsSummary(students: List<Student>, batches: List<Batch>): List<PaymentSummary> {
+        val currentDate = Date()
+        val calendar = Calendar.getInstance()
+        calendar.time = currentDate
+        val currentMonth = calendar.get(Calendar.MONTH)
+        val currentYear = calendar.get(Calendar.YEAR)
+
+        return students.filter { student ->
+            student.payments.any { payment ->
+                val paymentCalendar = Calendar.getInstance()
+                paymentCalendar.time = payment.paymentDate
+                paymentCalendar.get(Calendar.MONTH) == currentMonth &&
+                        paymentCalendar.get(Calendar.YEAR) == currentYear
+            }
+        }.map { student ->
+            val batch = batches.find { it.id == student.batchId }
+            val monthlyPayments = student.payments.filter { payment ->
+                val paymentCalendar = Calendar.getInstance()
+                paymentCalendar.time = payment.paymentDate
+                paymentCalendar.get(Calendar.MONTH) == currentMonth &&
+                        paymentCalendar.get(Calendar.YEAR) == currentYear
+            }
+            val totalMonthlyAmount = monthlyPayments.sumOf { it.amount }
+
+            PaymentSummary(
+                studentName = student.name,
+                batchName = batch?.name ?: "Unknown Batch",
+                amount = totalMonthlyAmount
+            )
+        }.sortedBy { it.studentName }
+    }
+
+    private fun getUnpaidStudentsSummary(students: List<Student>, batches: List<Batch>): List<PaymentSummary> {
+        val currentDate = Date()
+        val calendar = Calendar.getInstance()
+        calendar.time = currentDate
+        val currentMonth = calendar.get(Calendar.MONTH)
+        val currentYear = calendar.get(Calendar.YEAR)
+
+        return students.filter { student ->
+            !student.payments.any { payment ->
+                val paymentCalendar = Calendar.getInstance()
+                paymentCalendar.time = payment.paymentDate
+                paymentCalendar.get(Calendar.MONTH) == currentMonth &&
+                        paymentCalendar.get(Calendar.YEAR) == currentYear
+            }
+        }.map { student ->
+            val batch = batches.find { it.id == student.batchId }
+            val lastPayment = student.payments.maxByOrNull { it.paymentDate }
+
+            PaymentSummary(
+                studentName = student.name,
+                batchName = batch?.name ?: "Unknown Batch",
+                amount = lastPayment?.amount ?: 0.0
+            )
+        }.sortedBy { it.studentName }
+    }
 
     fun createBatch(batchName: String) {
         viewModelScope.launch {
@@ -105,21 +294,18 @@ class HomeViewModel : ViewModel() {
         }
     }
 
-    // ✅ NEW: Function to update a batch's name
     fun updateBatchName(batchId: String, newName: String) {
         if (newName.isBlank()) return
         viewModelScope.launch {
             try {
                 db.collection("batches").document(batchId)
                     .update("name", newName)
-
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Error updating batch name: ", e)
             }
         }
     }
 
-    // ✅ NEW: Function to delete a batch (and its students)
     fun deleteBatch(batchId: String) {
         viewModelScope.launch {
             try {

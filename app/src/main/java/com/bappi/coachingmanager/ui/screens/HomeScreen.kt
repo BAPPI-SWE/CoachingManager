@@ -4,14 +4,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,7 +19,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -30,6 +30,10 @@ import androidx.navigation.NavController
 import com.bappi.coachingmanager.data.Batch
 import com.bappi.coachingmanager.ui.viewmodels.HomeViewModel
 import com.bappi.coachingmanager.ui.viewmodels.StudentSearchResult
+import com.bappi.coachingmanager.ui.viewmodels.DashboardStats
+import com.bappi.coachingmanager.ui.viewmodels.PaymentSummary
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,18 +42,19 @@ fun HomeScreen(navController: NavController, homeViewModel: HomeViewModel = view
     val batches by homeViewModel.batches.collectAsState()
     val searchQuery by homeViewModel.searchQuery.collectAsState()
     val searchResults by homeViewModel.searchResults.collectAsState()
-    var showCreateDialog by remember { mutableStateOf(false) }
+    val dashboardStats by homeViewModel.dashboardStats.collectAsState()
 
-    // State for handling the edit and delete dialogs
+    var showCreateDialog by remember { mutableStateOf(false) }
     var batchToEdit by remember { mutableStateOf<Batch?>(null) }
     var batchToDelete by remember { mutableStateOf<Batch?>(null) }
+    var showSummaryDialog by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        "Coaching Manager",
+                        "Dashboard",
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -88,96 +93,54 @@ fun HomeScreen(navController: NavController, homeViewModel: HomeViewModel = view
                     )
                 )
         ) {
-            // Modern Header Section
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                        shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
-                    )
-                    .padding(24.dp)
-            ) {
-                Text(
-                    text = "Welcome Back!",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Manage your batches and students",
-                    fontSize = 16.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+            if (searchQuery.isBlank()) {
+                // Dashboard Section
+                DashboardSection(
+                    stats = dashboardStats,
+                    onStatClick = { statType -> showSummaryDialog = statType }
                 )
 
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // Modern Search Bar
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { homeViewModel.onSearchQueryChange(it) },
-                    label = { Text("Search students...") },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Search"
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                    )
-                )
+                Spacer(modifier = Modifier.height(16.dp))
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            // Search Bar
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { homeViewModel.onSearchQueryChange(it) },
+                label = { Text("Search students...") },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search"
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                )
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             if (searchQuery.isNotBlank()) {
-                // Search Results Section
-                Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                // Search Results
+                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                     Text(
                         text = "Search Results",
-                        fontSize = 20.sp,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
 
                     if (searchResults.isEmpty()) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                            ),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(48.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Icon(
-                                        imageVector = Icons.Default.Search,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                        modifier = Modifier.size(48.dp)
-                                    )
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    Text(
-                                        "No students found",
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        fontSize = 16.sp
-                                    )
-                                }
-                            }
-                        }
+                        EmptySearchCard()
                     } else {
                         LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             items(searchResults) { result ->
@@ -190,7 +153,7 @@ fun HomeScreen(navController: NavController, homeViewModel: HomeViewModel = view
                 }
             } else {
                 // Batches Section
-                Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -198,25 +161,27 @@ fun HomeScreen(navController: NavController, homeViewModel: HomeViewModel = view
                     ) {
                         Text(
                             text = "My Batches",
-                            fontSize = 20.sp,
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(horizontal = 8.dp)
                         )
                         if (batches.isNotEmpty()) {
                             Text(
                                 text = "${batches.size} ${if (batches.size == 1) "batch" else "batches"}",
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 8.dp)
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     if (batches.isEmpty()) {
                         EmptyBatchesCard()
                     } else {
-                        LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             items(batches) { batch ->
                                 ModernBatchCard(
                                     batch = batch,
@@ -232,6 +197,7 @@ fun HomeScreen(navController: NavController, homeViewModel: HomeViewModel = view
         }
     }
 
+    // Dialogs
     if (showCreateDialog) {
         CreateBatchDialog(
             onDismiss = { showCreateDialog = false },
@@ -242,7 +208,6 @@ fun HomeScreen(navController: NavController, homeViewModel: HomeViewModel = view
         )
     }
 
-    // Show the Edit Batch dialog when batchToEdit is not null
     batchToEdit?.let { batch ->
         EditBatchDialog(
             batch = batch,
@@ -254,7 +219,6 @@ fun HomeScreen(navController: NavController, homeViewModel: HomeViewModel = view
         )
     }
 
-    // Show the Delete Confirmation dialog when batchToDelete is not null
     batchToDelete?.let { batch ->
         DeleteBatchDialog(
             batchName = batch.name,
@@ -264,6 +228,342 @@ fun HomeScreen(navController: NavController, homeViewModel: HomeViewModel = view
                 batchToDelete = null
             }
         )
+    }
+
+    showSummaryDialog?.let { statType ->
+        SummaryDialog(
+            statType = statType,
+            homeViewModel = homeViewModel,
+            onDismiss = { showSummaryDialog = null }
+        )
+    }
+}
+
+@Composable
+fun DashboardSection(
+    stats: DashboardStats,
+    onStatClick: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+    ) {
+        Text(
+            text = "Overview",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
+        )
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 8.dp)
+        ) {
+            item {
+                CompactDashboardCard(
+                    title = "This Month",
+                    value = "৳${stats.monthlyCollection.toInt()}",
+                    icon = Icons.Default.AccountBalance,
+                    color = MaterialTheme.colorScheme.primary,
+                    onClick = { onStatClick("monthly_collection") }
+                )
+            }
+
+            item {
+                CompactDashboardCard(
+                    title = "This Year",
+                    value = "৳${stats.yearlyCollection.toInt()}",
+                    icon = Icons.Default.TrendingUp,
+                    color = MaterialTheme.colorScheme.secondary,
+                    onClick = { onStatClick("yearly_collection") }
+                )
+            }
+
+            item {
+                CompactDashboardCard(
+                    title = "Total St..",
+                    value = stats.totalStudents.toString(),
+                    icon = Icons.Default.Group,
+                    color = MaterialTheme.colorScheme.tertiary,
+                    onClick = { onStatClick("total_students") }
+                )
+            }
+
+            item {
+                CompactDashboardCard(
+                    title = "Paid",
+                    value = stats.monthlyPaidStudents.toString(),
+                    icon = Icons.Default.CheckCircle,
+                    color = Color(0xFF4CAF50),
+                    onClick = { onStatClick("paid_students") }
+                )
+            }
+
+            item {
+                CompactDashboardCard(
+                    title = "Unpaid",
+                    value = stats.monthlyUnpaidStudents.toString(),
+                    icon = Icons.Default.Cancel,
+                    color = MaterialTheme.colorScheme.error,
+                    onClick = { onStatClick("unpaid_students") }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun CompactDashboardCard(
+    title: String,
+    value: String,
+    icon: ImageVector,
+    color: Color,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .width(110.dp)
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(
+            containerColor = color.copy(alpha = 0.08f)
+        ),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(
+                        color.copy(alpha = 0.15f),
+                        CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = color,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = value,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                maxLines = 1
+            )
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Text(
+                text = title,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+@Composable
+fun DashboardStatCard(
+    title: String,
+    value: String,
+    subtitle: String,
+    icon: ImageVector,
+    color: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.clickable { onClick() },
+        colors = CardDefaults.cardColors(
+            containerColor = color.copy(alpha = 0.1f)
+        ),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = value,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = color,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = title,
+                fontSize = 12.sp,
+                color = color.copy(alpha = 0.8f),
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = subtitle,
+                fontSize = 10.sp,
+                color = color.copy(alpha = 0.6f),
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+fun SummaryDialog(
+    statType: String,
+    homeViewModel: HomeViewModel,
+    onDismiss: () -> Unit
+) {
+    val summaryData by homeViewModel.getSummaryData(statType).collectAsState()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = when (statType) {
+                    "monthly_collection" -> "Monthly Collection History"
+                    "yearly_collection" -> "Yearly Collection History"
+                    "total_students" -> "All Students"
+                    "paid_students" -> "Students Who Paid This Month"
+                    "unpaid_students" -> "Students Who Haven't Paid This Month"
+                    else -> "Summary"
+                },
+                fontWeight = FontWeight.Normal
+            )
+        },
+        text = {
+            LazyColumn(
+                modifier = Modifier.heightIn(max = 400.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(summaryData) { item ->
+                    SummaryItem(item = item, statType = statType)
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Close")
+            }
+        },
+        shape = RoundedCornerShape(20.dp)
+    )
+}
+
+@Composable
+fun SummaryItem(item: PaymentSummary, statType: String) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        when (statType) {
+            "monthly_collection", "yearly_collection" -> {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = item.period,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "৳${item.amount}",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+            "total_students", "paid_students", "unpaid_students" -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = item.studentName,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "Batch: ${item.batchName}",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (item.amount > 0) {
+                        Text(
+                            text = "Last Payment: ৳${item.amount}",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun EmptySearchCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(48.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    modifier = Modifier.size(48.dp)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    "No students found",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 16.sp
+                )
+            }
+        }
     }
 }
 
@@ -516,7 +816,7 @@ fun EmptyBatchesCard() {
                 text = "Create your first batch to get started",
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                textAlign = TextAlign.Center
             )
         }
     }
