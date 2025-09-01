@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -27,11 +28,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.bappi.coachingmanager.data.Batch
-import com.bappi.coachingmanager.ui.viewmodels.HomeViewModel
-import com.bappi.coachingmanager.ui.viewmodels.StudentSearchResult
 import com.bappi.coachingmanager.ui.viewmodels.DashboardStats
+import com.bappi.coachingmanager.ui.viewmodels.HomeViewModel
 import com.bappi.coachingmanager.ui.viewmodels.PaymentSummary
+import com.bappi.coachingmanager.ui.viewmodels.StudentSearchResult
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -43,6 +45,8 @@ fun HomeScreen(navController: NavController, homeViewModel: HomeViewModel = view
     val searchQuery by homeViewModel.searchQuery.collectAsState()
     val searchResults by homeViewModel.searchResults.collectAsState()
     val dashboardStats by homeViewModel.dashboardStats.collectAsState()
+    val userName by homeViewModel.userName.collectAsState()
+    val userPhotoUrl by homeViewModel.userPhotoUrl.collectAsState()
 
     var showCreateDialog by remember { mutableStateOf(false) }
     var batchToEdit by remember { mutableStateOf<Batch?>(null) }
@@ -93,6 +97,8 @@ fun HomeScreen(navController: NavController, homeViewModel: HomeViewModel = view
                     )
                 )
         ) {
+            WelcomeHeader(userName = userName, photoUrl = userPhotoUrl)
+
             if (searchQuery.isBlank()) {
                 // Dashboard Section
                 DashboardSection(
@@ -238,6 +244,65 @@ fun HomeScreen(navController: NavController, homeViewModel: HomeViewModel = view
         )
     }
 }
+
+
+@Composable
+fun WelcomeHeader(userName: String, photoUrl: String?) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // If photoUrl is available, show the image. Otherwise, show the initial.
+        if (!photoUrl.isNullOrBlank()) {
+            AsyncImage(
+                model = photoUrl,
+                contentDescription = "User Profile Picture",
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop // Ensures the image fills the circle
+            )
+        } else {
+            // Fallback Box with the user's first initial
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = userName.firstOrNull()?.uppercase() ?: "U",
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    fontSize = 20.sp
+                )
+            }
+        }
+
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        // Welcome text
+        Column {
+            Text(
+                text = "Hello, 👋",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = userName,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
 
 @Composable
 fun DashboardSection(

@@ -40,6 +40,14 @@ class HomeViewModel : ViewModel() {
     private val db = Firebase.firestore
     private val auth = Firebase.auth
 
+    // StateFlow to hold the user's display name
+    private val _userName = MutableStateFlow("User")
+    val userName = _userName.asStateFlow()
+
+    // StateFlow to hold the user's photo URL
+    private val _userPhotoUrl = MutableStateFlow<String?>(null)
+    val userPhotoUrl = _userPhotoUrl.asStateFlow()
+
     private val _batches = MutableStateFlow<List<Batch>>(emptyList())
     val batches = _batches.asStateFlow()
 
@@ -69,6 +77,9 @@ class HomeViewModel : ViewModel() {
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardStats())
 
     init {
+        // Fetch the user's name and photo URL during initialization
+        _userName.value = auth.currentUser?.displayName ?: "User"
+        _userPhotoUrl.value = auth.currentUser?.photoUrl?.toString()
         fetchBatchesAndStudents()
     }
 
