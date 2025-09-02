@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Required permission for AdMob -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -12,6 +15,15 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CoachingManager"
         tools:targetApi="31">
+
+        <!--
+         Sample AdMob app ID: ca-app-pub-3940256099942544~3347511713
+         REPLACE THIS VALUE WITH YOUR OWN ADMOB APP ID!
+        -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-1527833190869655~9091896422" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

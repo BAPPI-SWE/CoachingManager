@@ -24,6 +24,7 @@ import com.bappi.coachingmanager.auth.GoogleAuthUiClient
 import com.bappi.coachingmanager.ui.screens.*
 import com.bappi.coachingmanager.ui.theme.CoachingManagerTheme
 import com.bappi.coachingmanager.ui.viewmodels.LoginViewModel
+import com.google.android.gms.ads.MobileAds
 import com.google.android.gms.auth.api.identity.Identity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -40,6 +41,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Initialize the Google Mobile Ads SDK
+        MobileAds.initialize(this) {}
+
         setContent {
             CoachingManagerTheme {
                 Surface(

@@ -22,12 +22,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
 import com.bappi.coachingmanager.data.Student
 import com.bappi.coachingmanager.ui.viewmodels.BatchDetailsViewModel
 import com.bappi.coachingmanager.ui.viewmodels.PaymentStats
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.AdSize
+import com.google.android.gms.ads.AdView
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -155,6 +159,10 @@ fun BatchDetailsScreen(
                     )
                 )
         ) {
+            // --- AdMob Banner Ad ---
+            BannerAdView()
+            // --- End AdMob Banner Ad ---
+
             // Modern Header Section
             Column(
                 modifier = Modifier
@@ -311,6 +319,21 @@ fun BatchDetailsScreen(
             shape = RoundedCornerShape(20.dp)
         )
     }
+}
+
+@Composable
+fun BannerAdView() {
+    AndroidView(
+        modifier = Modifier.fillMaxWidth(),
+        factory = { context ->
+            AdView(context).apply {
+                // This is a Test Ad Unit ID. Replace it with your real Ad Unit ID from AdMob.
+                adUnitId = "ca-app-pub-1527833190869655/8753819228"
+                setAdSize(AdSize.BANNER)
+                loadAd(AdRequest.Builder().build())
+            }
+        }
+    )
 }
 
 @Composable

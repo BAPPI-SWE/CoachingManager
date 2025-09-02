@@ -1,5 +1,6 @@
 package com.bappi.coachingmanager.ui.screens
 
+import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -21,6 +22,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -29,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.bappi.coachingmanager.ads.InterstitialAdManager
 import com.bappi.coachingmanager.data.Batch
 import com.bappi.coachingmanager.ui.viewmodels.DashboardStats
 import com.bappi.coachingmanager.ui.viewmodels.HomeViewModel
@@ -52,6 +55,17 @@ fun HomeScreen(navController: NavController, homeViewModel: HomeViewModel = view
     var batchToEdit by remember { mutableStateOf<Batch?>(null) }
     var batchToDelete by remember { mutableStateOf<Batch?>(null) }
     var showSummaryDialog by remember { mutableStateOf<String?>(null) }
+
+    // --- AdMob Interstitial Ad Integration ---
+    val context = LocalContext.current
+    val interstitialAdManager = remember { InterstitialAdManager(context) }
+
+    // Pre-load the ad when the HomeScreen is first composed
+    LaunchedEffect(Unit) {
+        interstitialAdManager.loadAd()
+    }
+    // --- End AdMob Integration ---
+
 
     Scaffold(
         topBar = {
@@ -191,7 +205,12 @@ fun HomeScreen(navController: NavController, homeViewModel: HomeViewModel = view
                             items(batches) { batch ->
                                 ModernBatchCard(
                                     batch = batch,
-                                    onCardClick = { navController.navigate("batch_details/${batch.id}") },
+                                    onCardClick = {
+                                        // Show the ad. After the ad is dismissed, navigate.
+                                        interstitialAdManager.showAd(context as Activity) {
+                                            navController.navigate("batch_details/${batch.id}")
+                                        }
+                                    },
                                     onEditClick = { batchToEdit = batch },
                                     onDeleteClick = { batchToDelete = batch }
                                 )
