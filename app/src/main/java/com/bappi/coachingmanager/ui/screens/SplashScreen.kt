@@ -132,13 +132,13 @@ fun SplashScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.alpha(textAlpha)
             ) {
-                Text(
-                    text = "Kamruzzaman's",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Light,
-                    color = Color.White,
-                    textAlign = TextAlign.Center
-                )
+//                Text(
+//                    text = "Kamruzzaman's",
+//                    fontSize = 28.sp,
+//                    fontWeight = FontWeight.Light,
+//                    color = Color.White,
+//                    textAlign = TextAlign.Center
+//                )
 
                 Text(
                     text = "COACHING",
